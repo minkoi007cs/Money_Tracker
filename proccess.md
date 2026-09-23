@@ -6,7 +6,8 @@ Tên file này giữ đúng cách viết trong yêu cầu. Nhật ký chuẩn v�
 | --- | --- | --- |
 | 2026-09-22 | Khởi tạo Git, tạo lại kiến trúc, roadmap và nhật ký cho app | `b1eadbf` |
 | 2026-09-23 | Xây MVP Next.js + FastAPI: CSV preview/mapping/import, giao dịch, dashboard, recurring, insights, export/xóa; 10 test backend và build frontend qua | `b1eadbf` |
+| 2026-09-23 | Chuẩn bị Vercel hai project, chặn SQLite production; push nhánh `where-did-my-money-go` lên `minkoi007cs/app_system` | `8d49a5b` |
 
 Commit `b1eadbf` — `Build CSV spending dashboard MVP` (50 file). Chi tiết và giới hạn ở [process.md](./process.md). Bản cập nhật nhật ký sau commit này chưa được commit để hash trong file luôn đúng.
 
-2026-09-23: Chuẩn bị push nhánh riêng lên `minkoi007cs/app_system` vì `main` đang chứa ứng dụng khác. Thêm entrypoint FastAPI cho Vercel, kiểm tra PostgreSQL production và hướng dẫn deploy hai project; kết quả push/deploy sẽ ghi sau khi thực hiện.
+2026-09-23: Push nhánh riêng đã thành công; `main` của `app_system` không đổi. Preview của project Vercel cũ báo lỗi do root ứng dụng khác; cần project riêng và PostgreSQL riêng để deploy app tài chính. Chi tiết ở [process.md](./process.md).
