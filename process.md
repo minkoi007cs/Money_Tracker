@@ -29,8 +29,9 @@ Trước khi làm việc, đọc file này rồi `tech.md`. Sau mỗi thay đổ
 | 2026-09-23 | `53ac36e` | `Record GitHub branch push and deployment status` | Ghi kết quả push nhánh riêng và Preview của project Vercel cũ | `git push` thành công; xác nhận `main` không đổi |
 | 2026-09-23 | `d4fbe4a` | `Target Money_Tracker repository for deployment` | Cập nhật README, roadmap và nhật ký cho repo đích mới | `git diff --check` sạch |
 | 2026-09-23 | `f8de7e4` | `Merge Money_Tracker initialization with finance app` | Hợp nhất commit README khởi tạo vào lịch sử app; giữ README đầy đủ của app | `git merge-base --is-ancestor origin/main HEAD` qua trước push; push fast-forward thành công |
+| 2026-09-23 | `18cd6a7` | `Record Money_Tracker migration and push` | Đồng bộ nhật ký chuyển repo và kết quả push `Money_Tracker/main` | `git push origin HEAD:main` thành công |
 
-Nhật ký này được cập nhật **sau** commit `f8de7e4`, nên bản cập nhật nhật ký hiện là thay đổi chưa commit. Hash được lấy từ `git log -1`, không dự đoán trước commit.
+Hash trong bảng được lấy từ Git sau khi commit. Các commit chỉ ghi nhật ký có thể xem trong `git log` để tránh vòng lặp tự tham chiếu.
 
 ## Việc còn lại
 

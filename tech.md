@@ -2,7 +2,7 @@
 
 ## Quy tắc bắt buộc
 
-Trước **mỗi** phiên làm việc phải đọc `process.md` để biết trạng thái, commit gần nhất và việc còn lại. Sau mỗi thay đổi đáng kể phải ghi vào `process.md` ngày, phạm vi, file, lý do, kiểm thử, giới hạn, bước tiếp theo. Sau mỗi commit phải ghi hash và message thực tế; đồng bộ tóm tắt ở `proccess.md`. Cập nhật file này khi kiến trúc hoặc roadmap đổi. Không đánh dấu hoàn thành khi chưa kiểm thử.
+Trước **mỗi** phiên làm việc phải đọc `process.md` để biết trạng thái, commit gần nhất và việc còn lại. Sau mỗi thay đổi đáng kể phải ghi vào `process.md` ngày, phạm vi, file, lý do, kiểm thử, giới hạn, bước tiếp theo. Sau mỗi commit của ứng dụng hoặc tài liệu triển khai phải ghi hash và message thực tế; đồng bộ tóm tắt ở `proccess.md`. Commit chỉ cập nhật nhật ký xem trực tiếp bằng `git log`, vì không thể ghi hash của chính commit vào nội dung commit đó. Cập nhật file này khi kiến trúc hoặc roadmap đổi. Không đánh dấu hoàn thành khi chưa kiểm thử.
 
 ## Mục tiêu và phạm vi
 
