@@ -51,6 +51,18 @@ Log in as `demo@example.com` with the password you chose. The script refuses to 
 
 Copy `.env.example` to `.env` and set a strong `JWT_SECRET`. The backend reads environment variables from its process; a `.env` file is a reference for a shell or deployment platform and is not loaded automatically. `DATABASE_URL` defaults to `sqlite:///./money.db` relative to the backend working directory. For PostgreSQL, use `postgresql+psycopg://...`. Set `APP_ENV=production` in production; that mode requires an explicit `JWT_SECRET` of at least 32 characters. Set `CORS_ORIGINS` to the exact frontend origin and `NEXT_PUBLIC_API_URL` to the API origin at build time. Do not commit real secrets.
 
+## Vercel deployment
+
+Deploy this monorepo as **two Vercel projects** from the same Git branch. The existing `app_system` Vercel project belongs to a different application; do not change its root directory or production branch.
+
+1. Provision a dedicated PostgreSQL database for this app. Save its connection string as `DATABASE_URL` in SQLAlchemy's `postgresql+psycopg://` form. Never use the local SQLite file on Vercel; production startup rejects it.
+2. Run migrations against that database from `backend/`: `DATABASE_URL='postgresql+psycopg://...' ../.venv/bin/alembic upgrade head`. Use a secret manager or temporary shell session for the real URL; do not put it in Git.
+3. Import the Git repository into Vercel as an API project with **Root Directory** `backend`. Vercel detects `index.py` as the FastAPI entrypoint. Set production environment variables `APP_ENV=production`, `DATABASE_URL`, `JWT_SECRET` (random, at least 32 characters), and `CORS_ORIGINS=https://<frontend-domain>`. Deploy and check `https://<api-domain>/health`.
+4. Import the same Git repository as a separate Next.js project with **Root Directory** `frontend`. Set `NEXT_PUBLIC_API_URL=https://<api-domain>` for Production (and each Preview environment that uses the API). Deploy and check the home page, signup, CSV import and dashboard.
+5. Add the final frontend origin to the API project's `CORS_ORIGINS`, then redeploy the API. When a domain or environment variable changes, redeploy the affected project. Keep Preview and Production databases separate.
+
+The frontend API origin is embedded in the browser bundle during build. The backend requires a durable database and must be migrated before signup/import. Vercel project credentials and database secrets are configured in Vercel, not in this repository.
+
 ## Data rules
 
 Amounts use `Decimal` in Python and `NUMERIC(18,2)` in the database. Positive means money in; negative means money out. Transfers are excluded from income/spending totals. Refunds are shown separately. Currencies are never combined or converted. Ambiguous dates require an explicit format. The original CSV is processed in memory and not retained; import metadata and normalized transactions are stored. Uploaded CSVs must be UTF-8/UTF-8 BOM, 10 MiB or less, at most 100,000 rows and 50 columns. Export escapes spreadsheet formula prefixes in text cells.

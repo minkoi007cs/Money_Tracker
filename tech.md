@@ -19,6 +19,8 @@ Browser → Next.js App Router / TypeScript / Tailwind
 
 Backend là modular monolith. Route xử lý HTTP; service xử lý nghiệp vụ. Tất cả truy vấn tài chính dùng `user_id` từ token, không lấy từ body. Local auth dùng email/password và JWT để chạy độc lập; có thể chuyển sang Supabase Auth khi có credential bằng auth adapter riêng. Không triển khai fake bank integration. Frontend gọi API, không truy vấn DB trực tiếp.
 
+Triển khai Vercel dùng hai project từ cùng nhánh Git: `frontend/` Next.js và `backend/` FastAPI (`index.py` entrypoint). Backend cần PostgreSQL riêng đã chạy Alembic migration, `APP_ENV=production`, `JWT_SECRET` và CORS origin chính xác. Frontend cần `NEXT_PUBLIC_API_URL` trỏ tới backend. Repo `app_system` hiện có ứng dụng khác trên `main`, nên app tài chính dùng nhánh riêng; không đổi cấu hình project Vercel của ứng dụng đó. Quy trình chi tiết ở `README.md` và tiến độ thực tế ở `process.md`.
+
 ### Dữ liệu
 
 `users`: id, email, password hash, created_at. `import_batches`: id, user_id, filename, file_hash, counts, created_at. `import_profiles`: user_id + hash của headers → tên và mapping đã xác nhận. `transactions`: id, user_id, import_id, date, raw/normalized description, merchant, signed `NUMERIC(18,2)` amount, currency, category, category_source, confidence, fingerprint, transfer/refund/subscription flags, notes, created_at. `merchant_category_preferences`: user_id + merchant key → category. `recurring_overrides`: user_id + merchant key → loại user chọn. `user_settings`: currency/timezone. Khóa ngoại xóa theo chủ sở hữu; index `(user_id,date)`, `(user_id,merchant)`, `(user_id,fingerprint)`. Alembic migration quản lý schema.
