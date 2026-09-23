@@ -53,7 +53,7 @@ Copy `.env.example` to `.env` and set a strong `JWT_SECRET`. The backend reads e
 
 ## Vercel deployment
 
-Deploy this monorepo as **two Vercel projects** from the same Git branch. The existing `app_system` Vercel project belongs to a different application; do not change its root directory or production branch.
+Deploy `minkoi007cs/Money_Tracker` as **two Vercel projects** from its `main` branch. The existing `app_system` Vercel project belongs to a different application; do not change its root directory or production branch.
 
 1. Provision a dedicated PostgreSQL database for this app. Save its connection string as `DATABASE_URL` in SQLAlchemy's `postgresql+psycopg://` form. Never use the local SQLite file on Vercel; production startup rejects it.
 2. Run migrations against that database from `backend/`: `DATABASE_URL='postgresql+psycopg://...' ../.venv/bin/alembic upgrade head`. Use a secret manager or temporary shell session for the real URL; do not put it in Git.

@@ -19,7 +19,7 @@ Browser → Next.js App Router / TypeScript / Tailwind
 
 Backend là modular monolith. Route xử lý HTTP; service xử lý nghiệp vụ. Tất cả truy vấn tài chính dùng `user_id` từ token, không lấy từ body. Local auth dùng email/password và JWT để chạy độc lập; có thể chuyển sang Supabase Auth khi có credential bằng auth adapter riêng. Không triển khai fake bank integration. Frontend gọi API, không truy vấn DB trực tiếp.
 
-Triển khai Vercel dùng hai project từ cùng nhánh Git: `frontend/` Next.js và `backend/` FastAPI (`index.py` entrypoint). Backend cần PostgreSQL riêng đã chạy Alembic migration, `APP_ENV=production`, `JWT_SECRET` và CORS origin chính xác. Frontend cần `NEXT_PUBLIC_API_URL` trỏ tới backend. Repo `app_system` hiện có ứng dụng khác trên `main`, nên app tài chính dùng nhánh riêng; không đổi cấu hình project Vercel của ứng dụng đó. Quy trình chi tiết ở `README.md` và tiến độ thực tế ở `process.md`.
+Triển khai Vercel dùng hai project từ repo `minkoi007cs/Money_Tracker`, nhánh `main`: `frontend/` Next.js và `backend/` FastAPI (`index.py` entrypoint). Backend cần PostgreSQL riêng đã chạy Alembic migration, `APP_ENV=production`, `JWT_SECRET` và CORS origin chính xác. Frontend cần `NEXT_PUBLIC_API_URL` trỏ tới backend. Repo `app_system` đang chứa ứng dụng khác, không đổi cấu hình project Vercel của ứng dụng đó. Quy trình chi tiết ở `README.md` và tiến độ thực tế ở `process.md`.
 
 ### Dữ liệu
 
