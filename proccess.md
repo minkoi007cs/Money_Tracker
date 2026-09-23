@@ -14,3 +14,8 @@ Commit `b1eadbf` — `Build CSV spending dashboard MVP` (50 file). Chi tiết v�
 2026-09-23: Push nhánh riêng đã thành công; `main` của `app_system` không đổi. Preview của project Vercel cũ báo lỗi do root ứng dụng khác; cần project riêng và PostgreSQL riêng để deploy app tài chính. Chi tiết ở [process.md](./process.md).
 
 2026-09-23: Người dùng chọn repo `minkoi007cs/Money_Tracker`; chuẩn bị hợp nhất commit khởi tạo vào lịch sử app rồi push lên `main` không force.
+
+| Ngày | Thay đổi | Commit |
+| --- | --- | --- |
+| 2026-09-23 | Cập nhật tài liệu theo repo Money_Tracker | `d4fbe4a` |
+| 2026-09-23 | Hợp nhất lịch sử repo Money_Tracker; push app lên `main` thành công, không force | `f8de7e4` |
