@@ -1,5 +1,11 @@
 # Where Did My Money Go?
 
+[![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-App_Router-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Durable_Store-336791?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+
 A privacy-first spending dashboard built around bank CSV imports. It normalizes transactions, categorizes spending, shows month-to-month changes and recurring payments, and gives users control over export and deletion.
 
 ## What works
@@ -15,7 +21,7 @@ A privacy-first spending dashboard built around bank CSV imports. It normalizes 
 
 ## Stack and architecture
 
-`frontend/`: Next.js App Router, React, TypeScript, Tailwind CSS. `backend/`: FastAPI, SQLAlchemy, Alembic and PostgreSQL for deployment. SQLite is the local default. The frontend calls the FastAPI REST API; business rules stay in the backend. Read [tech.md](./tech.md) for architecture, API and roadmap. **Read [process.md](./process.md) before changing code and update it after significant work or commits.** [proccess.md](./proccess.md) keeps a summary under the requested spelling.
+`frontend/`: Next.js App Router, React, TypeScript, Tailwind CSS. `backend/`: FastAPI, SQLAlchemy, Alembic and PostgreSQL for deployment. SQLite is the local default. The frontend calls the FastAPI REST API; business rules stay in the backend. Read [tech.md](./tech.md) for architecture, API and roadmap. **Read [process.md](./process.md) before changing code and update it after significant work or commits.**
 
 ## Local setup
 
