@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="moneyBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#062419"/>
+      <stop offset="100%" stop-color="#02140d"/>
+    </linearGradient>
+    <linearGradient id="cashGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#moneyBg)" stroke="url(#cashGrad)" stroke-width="2"/>
+  <path d="M16 42 L26 31 L34 38 L48 21" fill="none" stroke="#34d399" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <polygon points="48,21 40,22 47,29" fill="#34d399"/>
+  <circle cx="22" cy="22" r="5" fill="url(#cashGrad)"/>
+  <text x="22" y="25" font-size="8" font-family="sans-serif" font-weight="bold" fill="#ffffff" text-anchor="middle">$</text>
+</svg>
