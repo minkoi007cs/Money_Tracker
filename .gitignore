@@ -10,3 +10,6 @@ frontend/next-env.d.ts
 backend/uploads/
 .vercel/
 .DS_Store
+
+.turbo
+

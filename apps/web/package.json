@@ -1,5 +1,5 @@
 {
-  "name": "where-did-my-money-go-frontend",
+  "name": "@money-tracker/web",
   "version": "1.0.0",
   "private": true,
   "scripts": {
