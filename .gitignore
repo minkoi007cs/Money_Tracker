@@ -7,9 +7,9 @@ __pycache__/
 node_modules/
 .next/
 frontend/next-env.d.ts
+apps/web/next-env.d.ts
 backend/uploads/
 .vercel/
 .DS_Store
 
 .turbo
-

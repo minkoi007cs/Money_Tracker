@@ -9,7 +9,7 @@ import {
   LockKeyhole,
   Wallet,
 } from "lucide-react";
-import { api, setToken } from "@/lib/api";
+import { api } from "@/lib/api";
 import { ErrorBox } from "@/components/UI";
 
 export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
@@ -23,11 +23,10 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
     setError(null);
     setBusy(true);
     try {
-      const result = await api<{ access_token: string }>(
+      await api<{ user: { email: string } }>(
         `/auth/${mode === "login" ? "login" : "register"}`,
         { method: "POST", body: JSON.stringify({ email, password }) },
       );
-      setToken(result.access_token);
       router.push("/dashboard");
     } catch (err) {
       setError((err as Error).message);

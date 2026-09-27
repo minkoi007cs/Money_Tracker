@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Download, ShieldCheck, Trash2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import InstallApp from "@/components/InstallApp";
+import BankAccounts from "@/components/BankAccounts";
 import { ErrorBox, Loading } from "@/components/UI";
-import { api, API_URL, setToken, token } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export default function Settings() {
   const router = useRouter();
@@ -35,16 +37,14 @@ export default function Settings() {
       setError((e as Error).message);
     }
   }
-  async function exportCsv() {
+  async function exportCsv(path = "/export/transactions", filename = "transactions.csv") {
     try {
-      const response = await fetch(`${API_URL}/api/v1/export/transactions`, {
-        headers: { Authorization: `Bearer ${token()}` },
-      });
+      const response = await fetch(`/api/v1${path}`, { cache: "no-store" });
       if (!response.ok) throw new Error("Could not export transactions");
       const url = URL.createObjectURL(await response.blob());
       const link = document.createElement("a");
       link.href = url;
-      link.download = "transactions.csv";
+      link.download = filename;
       link.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -56,7 +56,6 @@ export default function Settings() {
     try {
       await api(path, { method: "DELETE" });
       if (path === "/me") {
-        setToken(null);
         router.push("/");
       } else setNotice("All imported financial data has been deleted.");
     } catch (e) {
@@ -81,6 +80,8 @@ export default function Settings() {
         <Loading />
       ) : (
         <div className="settings-grid">
+          <BankAccounts />
+          <InstallApp />
           <section className="panel">
             <div className="panel-heading">
               <div>
@@ -135,9 +136,13 @@ export default function Settings() {
                 <strong>Export your transactions</strong>
                 <span>Download a CSV with the data in your workspace.</span>
               </div>
-              <button className="button button-outline" onClick={exportCsv}>
+              <button className="button button-outline" onClick={() => exportCsv()}>
                 <Download size={16} /> Export CSV
               </button>
+            </div>
+            <div className="privacy-action">
+              <div><strong>Export bank accounts</strong><span>Download names, currencies, and starting/current balances.</span></div>
+              <button className="button button-outline" onClick={() => exportCsv("/export/accounts", "accounts.csv")}><Download size={16} /> Export accounts</button>
             </div>
             <div className="privacy-action">
               <div>

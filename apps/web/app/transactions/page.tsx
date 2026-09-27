@@ -12,8 +12,9 @@ import {
   X,
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import AddTransaction from "@/components/AddTransaction";
 import { EmptyState, ErrorBox, Loading } from "@/components/UI";
-import { api, money, shortDate, Transaction } from "@/lib/api";
+import { api, BankAccount, money, shortDate, Transaction } from "@/lib/api";
 
 const categories = [
   "Food & Dining",
@@ -37,6 +38,7 @@ const categories = [
 ];
 export default function TransactionsPage() {
   const [items, setItems] = useState<Transaction[]>([]);
+  const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -50,11 +52,15 @@ export default function TransactionsPage() {
   const [reviewOnly, setReviewOnly] = useState(false);
   const [advanced, setAdvanced] = useState(false);
   const [selected, setSelected] = useState<Transaction | null>(null);
+  const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState<Partial<Transaction>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  useEffect(() => {
+    api<BankAccount[]>("/accounts").then(setAccounts).catch(() => {});
+  }, []);
   useEffect(() => {
     const params = new URLSearchParams({ page: String(page), page_size: "25" });
     if (search) params.set("search", search);
@@ -97,6 +103,7 @@ export default function TransactionsPage() {
       is_transfer: item.is_transfer,
       is_refund: item.is_refund,
       is_subscription: item.is_subscription,
+      account_id: item.account_id,
     });
   }
   async function save(event: FormEvent) {
@@ -114,6 +121,7 @@ export default function TransactionsPage() {
           is_transfer: draft.is_transfer,
           is_refund: draft.is_refund,
           is_subscription: draft.is_subscription,
+          account_id: draft.account_id,
         }),
       });
       setSelected(null);
@@ -143,9 +151,10 @@ export default function TransactionsPage() {
       title="Transactions"
       eyebrow="EVERY DETAIL, YOUR WAY"
       action={
-        <Link className="button button-primary" href="/import">
-          <Plus size={17} /> Import statement
-        </Link>
+        <div className="button-row transaction-actions">
+          <button className="button button-primary" onClick={() => setAdding(true)}><Plus size={17} /> Add transaction</button>
+          <Link className="button button-outline" href="/import">Import CSV</Link>
+        </div>
       }
     >
       <div className="intro-row">
@@ -280,6 +289,7 @@ export default function TransactionsPage() {
         </div>
       )}
       <ErrorBox message={error} />
+      {adding && <AddTransaction onClose={() => setAdding(false)} onSaved={() => { setAdding(false); setPage(1); setRefreshKey(value => value + 1); }} />}
       {loading ? (
         <Loading />
       ) : items.length === 0 ? (
@@ -288,7 +298,7 @@ export default function TransactionsPage() {
           text={
             total
               ? "Try a different search or filter."
-              : "Import a CSV to populate your transaction history."
+              : "Add a transaction by hand or import a CSV."
           }
           href={total ? undefined : "/import"}
           action="Import CSV"
@@ -414,6 +424,13 @@ export default function TransactionsPage() {
                   {categories.map((c) => (
                     <option key={c}>{c}</option>
                   ))}
+                </select>
+              </label>
+              <label>
+                Bank account
+                <select value={draft.account_id || ""} onChange={e => setDraft({ ...draft, account_id: e.target.value || null })}>
+                  <option value="">Unassigned</option>
+                  {accounts.filter(account => account.currency === selected.currency).map(account => <option key={account.id} value={account.id}>{account.name}</option>)}
                 </select>
               </label>
               <label>

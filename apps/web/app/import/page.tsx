@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { ErrorBox } from "@/components/UI";
-import { api } from "@/lib/api";
+import { api, BankAccount } from "@/lib/api";
 
 type Preview = {
   headers: string[];
@@ -49,6 +49,10 @@ export default function ImportPage() {
   const [result, setResult] = useState<Result | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accounts, setAccounts] = useState<BankAccount[]>([]);
+  const [accountId, setAccountId] = useState("");
+
+  useEffect(() => { api<BankAccount[]>("/accounts").then(setAccounts).catch(() => {}); }, []);
 
   async function choose(event: ChangeEvent<HTMLInputElement>) {
     const chosen = event.target.files?.[0];
@@ -110,6 +114,7 @@ export default function ImportPage() {
       );
       if (saveProfile && profileName.trim())
         form.append("profile_name", profileName.trim());
+      if (accountId) form.append("account_id", accountId);
       setResult(
         await api<Result>("/imports/confirm", { method: "POST", body: form }),
       );
@@ -129,6 +134,12 @@ export default function ImportPage() {
           anything is added.
         </p>
       </div>
+      <label className="import-account-select">Import into bank account
+        <select value={accountId} onChange={event => setAccountId(event.target.value)}>
+          <option value="">Unassigned (spending only)</option>
+          {accounts.map(account => <option key={account.id} value={account.id}>{account.name} · {account.currency}</option>)}
+        </select>
+      </label>
       <div className="steps">
         <span className="step active">
           1 <b>Upload</b>
@@ -202,7 +213,7 @@ export default function ImportPage() {
             <strong>
               {busy ? "Reading your file…" : "Choose a CSV statement"}
             </strong>
-            <span>Click here to select a file from your computer</span>
+            <span>Tap to select a file from your phone or computer</span>
             <small>CSV only · Up to 10 MB · Original file is not kept</small>
           </label>
           <div className="import-info">

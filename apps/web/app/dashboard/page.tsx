@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { EmptyState, ErrorBox, Loading } from "@/components/UI";
-import { api, money, shortDate, Summary, Transaction } from "@/lib/api";
+import { api, BankAccount, money, shortDate, Summary, Transaction } from "@/lib/api";
 
 type Period = "this" | "last" | "all";
 function range(period: Period) {
@@ -39,6 +39,7 @@ export default function Dashboard() {
   const [period, setPeriod] = useState<Period>("all");
   const [summary, setSummary] = useState<Record<string, Summary>>({});
   const [recent, setRecent] = useState<Transaction[]>([]);
+  const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [comparison, setComparison] = useState<{
     currencies: Record<string, { difference: string; percent: string | null }>;
   } | null>(null);
@@ -51,6 +52,7 @@ export default function Dashboard() {
         `/analytics/summary${range(period)}`,
       ),
       api<{ items: Transaction[] }>("/transactions?page_size=5"),
+      api<BankAccount[]>("/accounts"),
       api<{
         currencies: Record<
           string,
@@ -58,9 +60,10 @@ export default function Dashboard() {
         >;
       }>("/analytics/comparison"),
     ])
-      .then(([a, b, c]) => {
+      .then(([a, b, accountsResult, c]) => {
         setSummary(a.currencies);
         setRecent(b.items);
+        setAccounts(accountsResult);
         setComparison(c);
         setError(null);
       })
@@ -88,8 +91,8 @@ export default function Dashboard() {
     >
       <div className="intro-row">
         <p>
-          Your money at a glance. Every number comes from your imported
-          transactions.
+          Your money at a glance. Each figure comes from your tracked
+          transactions and account starting balances.
         </p>
         <label className="period-select">
           <CalendarDays size={17} />
@@ -105,14 +108,18 @@ export default function Dashboard() {
         </label>
       </div>
       <ErrorBox message={error} />
+      {accounts.length > 0 && <section className="account-balances panel">
+        <div className="panel-heading"><div><span className="section-kicker">BANK BALANCES</span><h2>Your accounts</h2></div><Link href="/settings" className="panel-link">Manage accounts <ArrowRight size={16} /></Link></div>
+        <div className="balance-grid">{accounts.map(account => <div className="balance-item" key={account.id}><span>{account.name}</span><strong>{money(account.balance, account.currency)}</strong><small>Starting balance {money(account.opening_balance, account.currency)} + assigned transactions</small></div>)}</div>
+      </section>}
       {loading ? (
         <Loading />
       ) : !data ? (
         <EmptyState
-          title="Your dashboard starts with a statement"
-          text="Upload a CSV to see where your money went, what changed, and what keeps coming back."
-          href="/import"
-          action="Import your first CSV"
+          title="Your dashboard starts with a transaction"
+          text="Add a transaction by hand or import a bank CSV to see where your money went."
+          href="/transactions"
+          action="Add your first transaction"
         />
       ) : (
         <>

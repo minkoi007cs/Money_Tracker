@@ -1,6 +1,3 @@
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
 export type Transaction = {
   id: string;
   date: string;
@@ -17,6 +14,15 @@ export type Transaction = {
   is_subscription: boolean;
   notes: string;
   import_id: string;
+  account_id: string | null;
+};
+
+export type BankAccount = {
+  id: string;
+  name: string;
+  currency: string;
+  opening_balance: string;
+  balance: string;
 };
 export type Summary = {
   income: string;
@@ -41,27 +47,14 @@ export type Recurring = {
   occurrences: number;
 };
 
-export function token() {
-  return typeof window === "undefined"
-    ? null
-    : localStorage.getItem("money_token");
-}
-
-export function setToken(value: string | null) {
-  if (typeof window === "undefined") return;
-  if (value) localStorage.setItem("money_token", value);
-  else localStorage.removeItem("money_token");
-}
-
 export async function api<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
   const headers = new Headers(options.headers);
-  if (token()) headers.set("Authorization", `Bearer ${token()}`);
   if (options.body && !(options.body instanceof FormData))
     headers.set("Content-Type", "application/json");
-  const response = await fetch(`${API_URL}/api/v1${path}`, {
+  const response = await fetch(`/api/v1${path}`, {
     ...options,
     headers,
     cache: "no-store",

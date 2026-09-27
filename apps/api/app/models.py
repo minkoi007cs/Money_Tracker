@@ -33,6 +33,16 @@ class UserSettings(Base):
     timezone: Mapped[str] = mapped_column(String(64), default="America/New_York")
 
 
+class Account(Base):
+    __tablename__ = "accounts"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    currency: Mapped[str] = mapped_column(String(3))
+    opening_balance: Mapped[Decimal] = mapped_column(Numeric(18, 2), default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class ImportBatch(Base):
     __tablename__ = "import_batches"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
@@ -68,7 +78,8 @@ class Transaction(Base):
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    import_id: Mapped[str] = mapped_column(ForeignKey("import_batches.id", ondelete="CASCADE"), index=True)
+    import_id: Mapped[str | None] = mapped_column(ForeignKey("import_batches.id", ondelete="CASCADE"), index=True, nullable=True)
+    account_id: Mapped[str | None] = mapped_column(ForeignKey("accounts.id", ondelete="SET NULL"), index=True, nullable=True)
     transaction_date: Mapped[date] = mapped_column(Date)
     description_raw: Mapped[str] = mapped_column(Text)
     description_normalized: Mapped[str] = mapped_column(Text)

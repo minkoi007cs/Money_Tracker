@@ -4,6 +4,10 @@ Trước khi làm việc, đọc file này rồi `tech.md`. Sau mỗi thay đổ
 
 ## Trạng thái
 
+- 2026-09-26: đã lấy `Money_Tracker/main` tại `189f82f` vào workspace trước đó chỉ có tài liệu, triển khai PWA cài được ở iPhone/Android sau khi có HTTPS + API, bổ sung tài khoản ngân hàng/số dư, nhập giao dịch thủ công, gán CSV/giao dịch vào tài khoản, export tài khoản, cookie HttpOnly và proxy cùng domain. Chưa triển khai các thay đổi lên production.
+- Kiểm thử mới nhất 2026-09-26: 13 test backend qua, migration 001→004 và `alembic check` qua trên SQLite, Next.js build/TypeScript qua bằng webpack, smoke test qua proxy cục bộ cho đăng ký/đăng nhập, cookie HttpOnly, CSRF Origin, nhập CSV, giao dịch thủ công, số dư và export; giao diện mobile 390×844 đã xem bằng Chrome.
+- Vercel đã có frontend `money-tracker-rho-bay.vercel.app` ở commit `189f82f`, nhưng project không có biến môi trường và không kết nối database. Chưa thấy API project riêng. Auto-review đã từ chối hành động tiếp tục tạo Neon database do có thể tạo tài nguyên bền vững và thay đổi quyền/chi phí; cần người dùng phê duyệt rõ trước khi cấu hình backend/database và phát hành bản cài được.
+
 - 2026-09-22: workspace trống ở đầu lượt này; tài liệu lượt trước không còn trên đĩa. Đã khởi tạo Git.
 - 2026-09-23: MVP cục bộ đã triển khai và commit. `frontend/` Next.js và `backend/` FastAPI chạy với SQLite cục bộ; PostgreSQL được cấu hình cho triển khai. Chưa triển khai production.
 - 2026-09-23: người dùng yêu cầu push lên `minkoi007cs/app_system` và hỗ trợ Vercel. Repo đích đã có ứng dụng `Unified-App-Infra` trên `main` (`a73cde6`), không có lịch sử chung với app tài chính. Đã push app lên nhánh riêng `where-did-my-money-go` thành công, giữ nguyên `main`. Project Vercel cũ `apps-system` tự tạo Preview từ nhánh mới nhưng báo lỗi vì root hiện trỏ vào app khác; production cũ vẫn Ready. Cần project Vercel riêng và PostgreSQL riêng cho app tài chính.
@@ -14,6 +18,7 @@ Trước khi làm việc, đọc file này rồi `tech.md`. Sau mỗi thay đổ
 
 | Ngày | Phạm vi và file | Lý do | Kiểm thử | Giới hạn/bước tiếp theo |
 | --- | --- | --- | --- | --- |
+| 2026-09-26 | `apps/web/app/manifest.ts`, `apps/web/public/`, `apps/web/components/`, `apps/web/app/api/v1/[...path]/route.ts`, `apps/api/app/`, migrations 003–004, tests, README/tech | Cài PWA trên điện thoại; nhập tay; theo dõi số dư từng bank; chuyển JWT ra cookie HttpOnly và proxy cùng domain | 13 pytest; migration 001→004 + `alembic check`; Next.js build; smoke test cục bộ và Chrome mobile | Chưa production do cần DB PostgreSQL riêng, API deployment, env/secrets, backup/retention và kiểm thử PostgreSQL. Chưa commit tại thời điểm ghi dòng này. |
 | 2026-09-22 | `tech.md`, `process.md`, `proccess.md`, `.env.example`, `.gitignore` | Tạo lại kiến trúc và quy trình trước mã ứng dụng | Đã đọc/đối chiếu file | Tiếp tục triển khai MVP |
 | 2026-09-23 | `backend/app/`, `backend/alembic/`, `backend/tests/`, `backend/scripts/`, `backend/requirements.txt` | Xây auth, DB/migration, CSV preview/confirm, mapping profile, dedupe, category, analytics, recurring, insight, export/xóa và dữ liệu demo | 10 pytest qua; migration mới + `alembic check` qua | Auth production, rate limit, PostgreSQL integration test còn mở |
 | 2026-09-23 | `frontend/app/`, `frontend/components/`, `frontend/lib/`, `frontend/package*.json`, `README.md` | Tạo UX từ đăng nhập đến dashboard/import/giao dịch/recurring/categories/insights/privacy, hướng dẫn chạy | `npm run build` qua; thử luồng demo trên trình duyệt; sửa CORS sau khi thử | Cần kiểm thử e2e tự động và hardening trước public deployment |
@@ -35,6 +40,7 @@ Hash trong bảng được lấy từ Git sau khi commit. Các commit chỉ ghi 
 
 ## Việc còn lại
 
-- Mốc 1–7 đã chạy ở môi trường cục bộ. Mốc 8 cần bổ sung auth session bằng cookie HttpOnly hoặc tương đương, rate limit đăng nhập, CSRF, backup/retention, PostgreSQL integration test, accessibility và e2e tự động trước khi triển khai public.
+- Mốc 1–7 đã chạy ở môi trường cục bộ. Cookie HttpOnly và kiểm tra Origin đã bổ sung; mốc 8 còn rate limit đăng nhập, backup/retention, PostgreSQL integration test, accessibility và e2e tự động trước khi triển khai public.
+- Hoàn tất Vercel cần tạo PostgreSQL riêng (Neon/Supabase hoặc nhà cung cấp khác), chạy migration, tạo API project và đặt `DATABASE_URL`, `JWT_SECRET`, `APP_ENV=production`, `API_BASE_URL`; sau đó thử bằng dữ liệu giả trên HTTPS trước khi dùng sao kê thật. Auto-review từ chối bước tiếp tục tạo Neon do rủi ro tài nguyên/chi phí/quyền; cần phê duyệt rõ.
 - Dedupe exact theo user/ngày/số tiền/mô tả có thể coi hai khoản chi thật giống hệt trong cùng ngày là trùng; cần màn hình xử lý thủ công hoặc near-duplicate review nếu dùng với sao kê nhiều nguồn.
 - Với commit tiếp theo, tiếp tục ghi hash và nội dung thực tế vào bảng Commit, đồng bộ `proccess.md` sau khi commit thành công.

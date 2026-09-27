@@ -11,19 +11,20 @@ Dashboard riêng tư để nhập sao kê CSV, chuẩn hóa số tiền, tránh 
 ## Kiến trúc
 
 ```text
-Browser → Next.js App Router / TypeScript / Tailwind
+Browser / installed PWA → Next.js App Router / TypeScript / Tailwind
+        → same-origin Next.js proxy (HttpOnly session cookie, Origin check)
         → FastAPI REST + JWT ownership checks
         → Services: CSV, normalization, categorization, recurring, analytics
         → SQLAlchemy → PostgreSQL production / SQLite local
 ```
 
-Backend là modular monolith. Route xử lý HTTP; service xử lý nghiệp vụ. Tất cả truy vấn tài chính dùng `user_id` từ token, không lấy từ body. Local auth dùng email/password và JWT để chạy độc lập; có thể chuyển sang Supabase Auth khi có credential bằng auth adapter riêng. Không triển khai fake bank integration. Frontend gọi API, không truy vấn DB trực tiếp.
+Backend là modular monolith. Route xử lý HTTP; service xử lý nghiệp vụ. Tất cả truy vấn tài chính dùng `user_id` từ token, không lấy từ body. Local auth dùng email/password và JWT để chạy độc lập; có thể chuyển sang Supabase Auth khi có credential bằng auth adapter riêng. Không triển khai fake bank integration. Trình duyệt gọi proxy cùng domain, token nằm trong cookie HttpOnly; proxy gọi API, không truy vấn DB trực tiếp.
 
-Triển khai Vercel dùng hai project từ repo `minkoi007cs/Money_Tracker`, nhánh `main`: `frontend/` Next.js và `backend/` FastAPI (`index.py` entrypoint). Backend cần PostgreSQL riêng đã chạy Alembic migration, `APP_ENV=production`, `JWT_SECRET` và CORS origin chính xác. Frontend cần `NEXT_PUBLIC_API_URL` trỏ tới backend. Repo `app_system` đang chứa ứng dụng khác, không đổi cấu hình project Vercel của ứng dụng đó. Quy trình chi tiết ở `README.md` và tiến độ thực tế ở `process.md`.
+Triển khai Vercel dùng hai project từ repo `minkoi007cs/Money_Tracker`, nhánh `main`: `apps/web/` Next.js và `apps/api/` FastAPI (`index.py` entrypoint). Backend cần PostgreSQL riêng đã chạy Alembic migration, `APP_ENV=production`, `JWT_SECRET` và CORS origin chính xác. Web project cần `API_BASE_URL` server-side trỏ tới backend. Repo `app_system` đang chứa ứng dụng khác, không đổi cấu hình project Vercel của ứng dụng đó. Quy trình chi tiết ở `README.md` và tiến độ thực tế ở `process.md`.
 
 ### Dữ liệu
 
-`users`: id, email, password hash, created_at. `import_batches`: id, user_id, filename, file_hash, counts, created_at. `import_profiles`: user_id + hash của headers → tên và mapping đã xác nhận. `transactions`: id, user_id, import_id, date, raw/normalized description, merchant, signed `NUMERIC(18,2)` amount, currency, category, category_source, confidence, fingerprint, transfer/refund/subscription flags, notes, created_at. `merchant_category_preferences`: user_id + merchant key → category. `recurring_overrides`: user_id + merchant key → loại user chọn. `user_settings`: currency/timezone. Khóa ngoại xóa theo chủ sở hữu; index `(user_id,date)`, `(user_id,merchant)`, `(user_id,fingerprint)`. Alembic migration quản lý schema.
+`users`: id, email, password hash, created_at. `accounts`: id, user_id, name, currency, opening_balance; số dư hiện tại = opening_balance + tổng signed transaction đã gán. `import_batches`: id, user_id, filename, file_hash, counts, created_at. `import_profiles`: user_id + hash của headers → tên và mapping đã xác nhận. `transactions`: id, user_id, import_id (nullable cho giao dịch ghi thủ công), account_id (nullable cho dữ liệu cũ/chưa gán), date, raw/normalized description, merchant, signed `NUMERIC(18,2)` amount, currency, category, category_source, confidence, fingerprint, transfer/refund/subscription flags, notes, created_at. `merchant_category_preferences`: user_id + merchant key → category. `recurring_overrides`: user_id + merchant key → loại user chọn. `user_settings`: currency/timezone. Khóa ngoại xóa theo chủ sở hữu; index `(user_id,date)`, `(user_id,merchant)`, `(user_id,fingerprint)`. Alembic migration quản lý schema.
 
 ### CSV → dashboard
 
@@ -31,11 +32,11 @@ Upload tối đa 10 MiB, chỉ CSV UTF-8/UTF-8 BOM, kiểm tra binary và số d
 
 ### API `/api/v1`
 
-`POST /auth/register`, `/auth/login`, `GET/DELETE /me`; `POST /imports/preview`, `/imports/confirm`, `GET /imports`, `DELETE /imports/{id}`, `GET/DELETE /import-profiles`; `GET/PATCH/DELETE /transactions/{id}`, `GET /transactions`; `GET /categories`; `GET /analytics/summary`, `/analytics/comparison`, `/analytics/timeline`; `GET /recurring`, `GET /subscriptions`, `PATCH /recurring/{merchant_key}`; `GET /insights`; `GET /export/transactions`; `DELETE /data`; `GET/PATCH /settings`. Lỗi có `error.code` và `error.message`, không lộ stack trace. List phân trang và lọc server-side.
+`POST /auth/register`, `/auth/login`, `GET/DELETE /me`; `GET/POST /accounts`, `PATCH/DELETE /accounts/{id}`; `POST /imports/preview`, `/imports/confirm`, `GET /imports`, `DELETE /imports/{id}`, `GET/DELETE /import-profiles`; `POST/GET /transactions`, `GET/PATCH/DELETE /transactions/{id}`; `GET /categories`; `GET /analytics/summary`, `/analytics/comparison`, `/analytics/timeline`; `GET /recurring`, `GET /subscriptions`, `PATCH /recurring/{merchant_key}`; `GET /insights`; `GET /export/transactions`, `/export/accounts`; `DELETE /data`; `GET/PATCH /settings`. Lỗi có `error.code` và `error.message`, không lộ stack trace. List phân trang và lọc server-side.
 
 ### UI
 
-Landing, login, signup; dashboard, import, transactions, recurring/subscriptions, insights, settings/privacy. Sidebar và bộ lọc kỳ, empty/loading/error states, bảng số liệu song song biểu đồ, keyboard labels và responsive. Từ ngữ trung tính; không gọi phát hiện bất thường là fraud.
+Landing, login, signup; dashboard, import, transactions, recurring/subscriptions, insights, settings/privacy. Có nhập giao dịch thủ công từ điện thoại. PWA có manifest, icon, màn hình offline không lưu giao dịch, hướng dẫn cài trên iOS/Android; cần HTTPS và backend để dùng dữ liệu. Sidebar trên desktop, điều hướng dưới trên mobile, bộ lọc kỳ, empty/loading/error states, bảng số liệu song song biểu đồ, keyboard labels và responsive. Từ ngữ trung tính; không gọi phát hiện bất thường là fraud.
 
 ### Bảo mật và vận hành
 
