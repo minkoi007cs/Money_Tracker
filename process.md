@@ -18,7 +18,7 @@ Trước khi làm việc, đọc file này rồi `tech.md`. Sau mỗi thay đổ
 
 | Ngày | Phạm vi và file | Lý do | Kiểm thử | Giới hạn/bước tiếp theo |
 | --- | --- | --- | --- | --- |
-| 2026-09-26 | `apps/web/app/manifest.ts`, `apps/web/public/`, `apps/web/components/`, `apps/web/app/api/v1/[...path]/route.ts`, `apps/api/app/`, migrations 003–004, tests, README/tech | Cài PWA trên điện thoại; nhập tay; theo dõi số dư từng bank; chuyển JWT ra cookie HttpOnly và proxy cùng domain | 13 pytest; migration 001→004 + `alembic check`; Next.js build; smoke test cục bộ và Chrome mobile | Chưa production do cần DB PostgreSQL riêng, API deployment, env/secrets, backup/retention và kiểm thử PostgreSQL. Chưa commit tại thời điểm ghi dòng này. |
+| 2026-09-26 | `apps/web/app/manifest.ts`, `apps/web/public/`, `apps/web/components/`, `apps/web/app/api/v1/[...path]/route.ts`, `apps/api/app/`, migrations 003–004, tests, README/tech | Cài PWA trên điện thoại; nhập tay; theo dõi số dư từng bank; chuyển JWT ra cookie HttpOnly và proxy cùng domain | 13 pytest; migration 001→004 + `alembic check`; Next.js build; smoke test cục bộ và Chrome mobile | Đã commit cục bộ `f8eea58`; chưa production do cần DB PostgreSQL riêng, API deployment, env/secrets, backup/retention và kiểm thử PostgreSQL. |
 | 2026-09-22 | `tech.md`, `process.md`, `proccess.md`, `.env.example`, `.gitignore` | Tạo lại kiến trúc và quy trình trước mã ứng dụng | Đã đọc/đối chiếu file | Tiếp tục triển khai MVP |
 | 2026-09-23 | `backend/app/`, `backend/alembic/`, `backend/tests/`, `backend/scripts/`, `backend/requirements.txt` | Xây auth, DB/migration, CSV preview/confirm, mapping profile, dedupe, category, analytics, recurring, insight, export/xóa và dữ liệu demo | 10 pytest qua; migration mới + `alembic check` qua | Auth production, rate limit, PostgreSQL integration test còn mở |
 | 2026-09-23 | `frontend/app/`, `frontend/components/`, `frontend/lib/`, `frontend/package*.json`, `README.md` | Tạo UX từ đăng nhập đến dashboard/import/giao dịch/recurring/categories/insights/privacy, hướng dẫn chạy | `npm run build` qua; thử luồng demo trên trình duyệt; sửa CORS sau khi thử | Cần kiểm thử e2e tự động và hardening trước public deployment |
@@ -35,6 +35,7 @@ Trước khi làm việc, đọc file này rồi `tech.md`. Sau mỗi thay đổ
 | 2026-09-23 | `d4fbe4a` | `Target Money_Tracker repository for deployment` | Cập nhật README, roadmap và nhật ký cho repo đích mới | `git diff --check` sạch |
 | 2026-09-23 | `f8de7e4` | `Merge Money_Tracker initialization with finance app` | Hợp nhất commit README khởi tạo vào lịch sử app; giữ README đầy đủ của app | `git merge-base --is-ancestor origin/main HEAD` qua trước push; push fast-forward thành công |
 | 2026-09-23 | `18cd6a7` | `Record Money_Tracker migration and push` | Đồng bộ nhật ký chuyển repo và kết quả push `Money_Tracker/main` | `git push origin HEAD:main` thành công |
+| 2026-09-26 | `f8eea58` | `Build installable mobile finance tracker with bank balances` | Bổ sung PWA, nhập tiền thủ công, tài khoản ngân hàng và số dư, proxy cùng domain và cookie HttpOnly, migration/test và tài liệu | 13 pytest; migration 001→004 + `alembic check`; Next.js build; smoke test cục bộ và Chrome mobile |
 
 Hash trong bảng được lấy từ Git sau khi commit. Các commit chỉ ghi nhật ký có thể xem trong `git log` để tránh vòng lặp tự tham chiếu.
 
