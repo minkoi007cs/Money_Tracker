@@ -4,4 +4,4 @@ Nhật ký phát triển được duy trì tại [process.md](./process.md). Fil
 
 Bản PWA và theo dõi tài khoản ngân hàng đã được commit cục bộ tại `f8eea58` ngày 2026-09-26. Trạng thái triển khai và các bước còn lại được cập nhật trong `process.md`.
 
-Ngày 2026-10-14, mã tích hợp App System authentication và database tenant đã qua kiểm thử cục bộ. Việc đăng ký child app, cấp database thật và triển khai vẫn chờ phiên đăng nhập App System của người dùng; xem `process.md`.
+Ngày 2026-10-14, mã tích hợp App System authentication và database tenant đã qua kiểm thử cục bộ và được commit tại `32e806b`. Việc đăng ký child app, cấp database thật và triển khai vẫn chờ phiên đăng nhập App System của người dùng; xem `process.md`.
