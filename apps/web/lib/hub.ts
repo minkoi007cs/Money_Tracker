@@ -84,7 +84,9 @@ async function authPost(path: string, body: object): Promise<{ session: HubSessi
       method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${c.secretKey}` },
       body: JSON.stringify(body), cache: "no-store", signal: AbortSignal.timeout(10000),
     });
-    return { session: response.ok ? pair(await response.json()) : null, status: response.status };
+    if (!response.ok) return { session: null, status: response.status };
+    const session = pair(await response.json());
+    return { session, status: session ? response.status : 503 };
   } catch { return { session: null, status: 503 }; }
 }
 

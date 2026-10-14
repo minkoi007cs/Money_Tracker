@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   if (session.expiresAt - Date.now() >= 60_000) return NextResponse.json({ active: true }, { headers: { "Cache-Control": "no-store" } });
   const result = await refreshSession(session.refreshToken);
   if (!result.session) {
-    const status = result.status === 503 ? 503 : 401;
+    const status = result.status >= 500 ? 503 : 401;
     const response = NextResponse.json({ error: { message: status === 503 ? "Authentication service unavailable" : "Please sign in again" } }, { status });
     if (status === 401) response.cookies.delete(SESSION_COOKIE);
     return response;
