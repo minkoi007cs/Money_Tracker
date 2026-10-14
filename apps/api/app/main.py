@@ -13,7 +13,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -120,7 +120,11 @@ def all_transactions(db, user):
 
 
 @app.get("/health")
-def health():
+def health(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database unavailable")
     return {"status": "ok"}
 
 

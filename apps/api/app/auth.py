@@ -22,7 +22,7 @@ INFRA_SECRET_KEY = os.getenv("INFRA_SECRET_KEY", "")
 HUB_AUTH = bool(INFRA_URL)
 if HUB_AUTH and (not INFRA_APP_ID or not INFRA_SECRET_KEY.startswith("sk_")):
     raise RuntimeError("INFRA_APP_ID and INFRA_SECRET_KEY are required with INFRA_URL")
-if os.getenv("APP_ENV") == "production" and not HUB_AUTH:
+if (os.getenv("APP_ENV") == "production" or os.getenv("VERCEL") == "1") and not HUB_AUTH:
     raise RuntimeError("Production requires App System authentication (INFRA_URL)")
 hub_keys = jwt.PyJWKClient(f"{INFRA_URL}/.well-known/jwks.json", cache_jwk_set=True, lifespan=300) if HUB_AUTH else None
 password_hasher = PasswordHasher()

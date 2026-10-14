@@ -10,7 +10,7 @@ if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
 elif DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
-if os.getenv("APP_ENV") == "production" and DATABASE_URL.startswith("sqlite"):
+if (os.getenv("APP_ENV") == "production" or os.getenv("VERCEL") == "1") and DATABASE_URL.startswith("sqlite"):
     raise RuntimeError("Production requires a persistent PostgreSQL DATABASE_URL")
 engine = create_engine(
     DATABASE_URL,
