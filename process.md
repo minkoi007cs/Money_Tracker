@@ -40,6 +40,7 @@ Trước khi làm việc, đọc file này rồi `tech.md`. Sau mỗi thay đổ
 | 2026-09-23 | `18cd6a7` | `Record Money_Tracker migration and push` | Đồng bộ nhật ký chuyển repo và kết quả push `Money_Tracker/main` | `git push origin HEAD:main` thành công |
 | 2026-09-26 | `f8eea58` | `Build installable mobile finance tracker with bank balances` | Bổ sung PWA, nhập tiền thủ công, tài khoản ngân hàng và số dư, proxy cùng domain và cookie HttpOnly, migration/test và tài liệu | 13 pytest; migration 001→004 + `alembic check`; Next.js build; smoke test cục bộ và Chrome mobile |
 | 2026-10-14 | `32e806b` | `Integrate App System authentication and tenant database configuration` | Thêm hosted PKCE, xác minh token App System trong FastAPI, cookie/refresh, cấu hình PostgreSQL tenant và tài liệu | 14 pytest; Next build chế độ hub; synthetic PKCE/callback/refresh/proxy/logout; migration SQLite + `alembic check` |
+| 2026-10-14 | `27f7077` | `Preserve hub session during auth service outages` | Giữ cookie khi App System trả lỗi máy chủ hoặc dữ liệu phiên không hợp lệ tạm thời | Next build chế độ hub và synthetic auth smoke test qua |
 
 Hash trong bảng được lấy từ Git sau khi commit. Các commit chỉ ghi nhật ký có thể xem trong `git log` để tránh vòng lặp tự tham chiếu.
 
