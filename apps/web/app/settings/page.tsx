@@ -7,7 +7,7 @@ import AppShell from "@/components/AppShell";
 import InstallApp from "@/components/InstallApp";
 import BankAccounts from "@/components/BankAccounts";
 import { ErrorBox, Loading } from "@/components/UI";
-import { api } from "@/lib/api";
+import { api, ensureHubSession } from "@/lib/api";
 
 export default function Settings() {
   const router = useRouter();
@@ -39,6 +39,7 @@ export default function Settings() {
   }
   async function exportCsv(path = "/export/transactions", filename = "transactions.csv") {
     try {
+      await ensureHubSession();
       const response = await fetch(`/api/v1${path}`, { cache: "no-store" });
       if (!response.ok) throw new Error("Could not export transactions");
       const url = URL.createObjectURL(await response.blob());
@@ -167,14 +168,14 @@ export default function Settings() {
             <div className="privacy-action">
               <div>
                 <strong>Delete your account</strong>
-                <span>Removes your account and all its financial data.</span>
+                <span>{process.env.NEXT_PUBLIC_AUTH_MODE === "hub" ? "Removes your Money Tracker profile and financial data. Your App System sign-in remains active." : "Removes your account and all its financial data."}</span>
               </div>
               <button
                 className="button button-danger"
                 onClick={() =>
                   erase(
                     "/me",
-                    "Permanently delete your account and every transaction? This cannot be undone.",
+                    process.env.NEXT_PUBLIC_AUTH_MODE === "hub" ? "Permanently delete your Money Tracker profile and every transaction? Your App System sign-in will remain. This cannot be undone." : "Permanently delete your account and every transaction? This cannot be undone.",
                   )
                 }
               >

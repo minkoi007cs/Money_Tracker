@@ -18,7 +18,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .analytics import compare_month, recurring_series, summarize
-from .auth import create_token, current_user, hash_password, verify_password
+from .auth import HUB_AUTH, create_token, current_user, hash_password, verify_password
 from .db import get_db
 from .importer import CATEGORIES, detect_mapping, load_csv, merchant_and_category, normalize_description, validate_mapping
 from .models import Account, ImportBatch, ImportProfile, MerchantPreference, RecurringOverride, Transaction, User, UserSettings
@@ -126,6 +126,8 @@ def health():
 
 @app.post("/api/v1/auth/register", status_code=201)
 def register(payload: Credentials, db: Session = Depends(get_db)):
+    if HUB_AUTH:
+        raise HTTPException(410, "Sign up through App System")
     email = str(payload.email).lower()
     if db.scalar(select(User.id).where(User.email == email)):
         raise HTTPException(409, "Email is already registered")
@@ -139,6 +141,8 @@ def register(payload: Credentials, db: Session = Depends(get_db)):
 
 @app.post("/api/v1/auth/login")
 def login(payload: Credentials, db: Session = Depends(get_db)):
+    if HUB_AUTH:
+        raise HTTPException(410, "Sign in through App System")
     user = db.scalar(select(User).where(User.email == str(payload.email).lower()))
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(401, "Invalid credentials")

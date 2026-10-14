@@ -10,7 +10,7 @@ A privacy-first spending dashboard built around bank CSV imports. It normalizes 
 
 ## What works
 
-- Email/password account with Argon2 password hashing and JWT sessions
+- App System hosted sign-in with email/social providers and short-lived signed access tokens in deployed mode; local email/password mode remains for offline development
 - CSV preview, column mapping, saved mapping profiles, signed or separate debit/credit amounts, per-row validation, duplicate detection, import history and deletion
 - Merchant normalization, rule-based categories, manual category edits that become user preferences
 - Dashboard totals, category and merchant breakdowns, daily spending trend, month comparison and factual insights
@@ -24,7 +24,7 @@ A privacy-first spending dashboard built around bank CSV imports. It normalizes 
 
 ## Stack and architecture
 
-`apps/web/`: Next.js App Router, React, TypeScript, Tailwind CSS and PWA assets. `apps/api/`: FastAPI, SQLAlchemy, Alembic and PostgreSQL for deployment. SQLite is the local default. The browser calls a same-origin Next.js API route; that route stores the JWT in an HttpOnly cookie and proxies requests to FastAPI. Business rules stay in the backend. Read [tech.md](./tech.md) for architecture, API and roadmap. **Read [process.md](./process.md) before changing code and update it after significant work or commits.**
+`apps/web/`: Next.js App Router, React, TypeScript, Tailwind CSS and PWA assets. `apps/api/`: FastAPI, SQLAlchemy, Alembic and PostgreSQL for deployment. SQLite is the local default. In deployed mode the browser signs in through App System's hosted authorization-code flow with PKCE; Money Tracker keeps the resulting access and refresh tokens in a same-origin HttpOnly cookie. FastAPI checks the App System JWT signature, issuer and Money Tracker audience. Finance records are stored in a dedicated App System provisioned PostgreSQL tenant database, accessed directly by FastAPI with per-user ownership checks. Read [tech.md](./tech.md) for architecture, API and roadmap. **Read [process.md](./process.md) before changing code and update it after significant work or commits.**
 
 ## Local setup
 
@@ -58,19 +58,19 @@ Log in as `demo@example.com` with the password you chose. The script refuses to 
 
 ## Environment
 
-Copy `.env.example` to `.env` and set a strong `JWT_SECRET`. The backend reads environment variables from its process; a `.env` file is a reference for a shell or deployment platform and is not loaded automatically. `DATABASE_URL` defaults to `sqlite:///./money.db` relative to the backend working directory. For PostgreSQL, use `postgresql+psycopg://...`. Set `APP_ENV=production` in production; that mode requires an explicit `JWT_SECRET` of at least 32 characters. Set `API_BASE_URL` on the web project to the API origin. The browser does not need the API URL or JWT. Do not commit real secrets.
+Copy `.env.example` to `.env` for reference. The backend reads variables from its process; it does not load `.env` automatically. Local development uses SQLite and a local `JWT_SECRET`. Production requires `APP_ENV=production`, `INFRA_URL`, `INFRA_APP_ID`, `INFRA_SECRET_KEY` and a durable PostgreSQL `DATABASE_URL` in `postgresql+psycopg://...` form. The web project needs `NEXT_PUBLIC_AUTH_MODE=hub`, `INFRA_URL`, `INFRA_PUBLISHABLE_KEY`, `INFRA_SECRET_KEY`, `APP_URL` and `API_BASE_URL`. Only the auth mode is public in the web bundle. Never commit keys or connection strings.
 
 ## Vercel deployment
 
-Deploy `minkoi007cs/Money_Tracker` as **two Vercel projects** from its `main` branch. The existing `app_system` Vercel project belongs to a different application; do not change its root directory or production branch.
+Deploy `minkoi007cs/Money_Tracker` as **two Vercel projects** from its `main` branch. App System remains its own project and serves authentication and database provisioning; do not change its root directory or production branch.
 
-1. Provision a dedicated PostgreSQL database for this app. Save its connection string as `DATABASE_URL` in SQLAlchemy's `postgresql+psycopg://` form. Never use the local SQLite file on Vercel; production startup rejects it.
-2. Run migrations against that database from `apps/api/`: `DATABASE_URL='postgresql+psycopg://...' ../../.venv/bin/alembic upgrade head`. Use a secret manager or temporary shell session for the real URL; do not put it in Git.
-3. Import the Git repository into Vercel as an API project with **Root Directory** `apps/api`. Vercel detects `index.py` as the FastAPI entrypoint. Set production environment variables `APP_ENV=production`, `DATABASE_URL`, `JWT_SECRET` (random, at least 32 characters), and `CORS_ORIGINS=https://<frontend-domain>`. Deploy and check `https://<api-domain>/health`.
-4. Import the same Git repository as a separate Next.js project with **Root Directory** `apps/web`. Set `API_BASE_URL=https://<api-domain>` for Production (and each Preview environment that uses the API). Deploy and check the home page, signup, CSV import and dashboard.
-5. Add the final frontend origin to the API project's `CORS_ORIGINS`, then redeploy the API. When a domain or environment variable changes, redeploy the affected project. Keep Preview and Production databases separate.
+1. In App System, register **Money Tracker** with its exact HTTPS frontend origin, enable hosted sign-in, and provision its own PostgreSQL tenant database. Record the app ID and issue a publishable `pk_` key and server-only `sk_` key. Obtain that tenant database's connection URL without placing it in Git or chat. Do not use App System's Master DB.
+2. Run Money Tracker's migrations against the tenant database from `apps/api/`: `DATABASE_URL='postgresql+psycopg://...' ../../.venv/bin/alembic upgrade head`. The real URL belongs in a secret manager or temporary process environment.
+3. Import this repository into Vercel as an API project with **Root Directory** `apps/api`. Set `APP_ENV=production`, `DATABASE_URL`, `INFRA_URL=https://system.minkoi.org`, `INFRA_APP_ID`, `INFRA_SECRET_KEY` and `CORS_ORIGINS=https://<frontend-domain>`. Deploy and check `/health`.
+4. Keep the existing frontend Vercel project with **Root Directory** `apps/web`. Set `NEXT_PUBLIC_AUTH_MODE=hub`, `INFRA_URL`, `INFRA_PUBLISHABLE_KEY`, `INFRA_SECRET_KEY`, `APP_URL=https://<frontend-domain>` and `API_BASE_URL=https://<api-domain>`. Redeploy so the public auth mode is included in the build.
+5. Check hosted sign-in → callback → dashboard → CSV import with synthetic data, a second user's isolation, export and logout on HTTPS. Test iPhone Safari and Android Chrome installation. Keep Preview and Production tenant databases and credentials separate.
 
-The API origin is read by the server-side Next.js proxy. The backend requires a durable database and must be migrated before signup/import. Vercel project credentials and database secrets are configured in Vercel, not in this repository.
+The API origin is read by the server-side Next.js proxy. The backend requires a durable database and must be migrated before signup/import. The App System `sk_` key and tenant database URL are server-only. Vercel project credentials and database secrets are configured in Vercel, not in this repository.
 
 ## Install on a phone
 
@@ -91,4 +91,4 @@ Backend tests cover import, saved mapping profiles, duplicate detection, categor
 
 ## Current limits before public deployment
 
-This is a working local MVP, not a live bank connection. The existing Vercel frontend is not yet connected to an API or database. Authentication uses the local JWT adapter; Supabase Auth is a future integration. The web proxy now uses an HttpOnly, SameSite cookie and checks Origin on writes. Public deployment still needs login rate limiting, configured backups and retention, and PostgreSQL integration/security tests. Exact duplicate fingerprints can classify two genuinely identical charges on the same day as duplicates; users should review import counts. Recurring dates are estimates. CSV encoding beyond UTF-8 and bank-specific import profiles are not yet supported. No direct bank integration, currency conversion or LLM calls are included.
+This is a working local MVP, not a live bank connection. The existing Vercel frontend is not yet connected to an API or database. App System mode is implemented and locally tested with synthetic tokens, but the Money Tracker child app, tenant database, deployment secrets and PostgreSQL migration are not yet configured. The web proxy uses an HttpOnly, SameSite cookie and checks Origin on writes. Before importing a real statement, verify configured backups and retention, PostgreSQL integration/security tests, and the full hosted sign-in flow on HTTPS. Exact duplicate fingerprints can classify two genuinely identical charges on the same day as duplicates; users should review import counts. Recurring dates are estimates. CSV encoding beyond UTF-8 and bank-specific import profiles are not yet supported. No direct bank integration, currency conversion or LLM calls are included.

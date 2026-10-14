@@ -12,15 +12,16 @@ Dashboard riêng tư để nhập sao kê CSV, chuẩn hóa số tiền, tránh 
 
 ```text
 Browser / installed PWA → Next.js App Router / TypeScript / Tailwind
-        → same-origin Next.js proxy (HttpOnly session cookie, Origin check)
-        → FastAPI REST + JWT ownership checks
+        → App System hosted sign-in (authorization code + PKCE)
+        → same-origin Next.js proxy (HttpOnly token-pair cookie, Origin check)
+        → FastAPI REST + App System ES256 JWT verification + ownership checks
         → Services: CSV, normalization, categorization, recurring, analytics
-        → SQLAlchemy → PostgreSQL production / SQLite local
+        → SQLAlchemy → App System provisioned PostgreSQL tenant DB / SQLite local
 ```
 
-Backend là modular monolith. Route xử lý HTTP; service xử lý nghiệp vụ. Tất cả truy vấn tài chính dùng `user_id` từ token, không lấy từ body. Local auth dùng email/password và JWT để chạy độc lập; có thể chuyển sang Supabase Auth khi có credential bằng auth adapter riêng. Không triển khai fake bank integration. Trình duyệt gọi proxy cùng domain, token nằm trong cookie HttpOnly; proxy gọi API, không truy vấn DB trực tiếp.
+Backend là modular monolith. Route xử lý HTTP; service xử lý nghiệp vụ. Tất cả truy vấn tài chính dùng `user_id` suy ra từ App System token, không lấy từ body. Production dùng App System cho authentication: Next.js đổi mã PKCE trên server, giữ access/refresh token trong cookie HttpOnly, làm mới khi gần hết hạn; FastAPI kiểm tra chữ ký JWKS, issuer, audience và token type, rồi ánh xạ `sub` sang ID người dùng cục bộ ổn định. SQLite/local email+password chỉ dùng trong development. App System cấp database PostgreSQL riêng cho Money Tracker; FastAPI kết nối tenant DB trực tiếp và tự thi hành giới hạn `user_id`, không dùng data gateway/policy của hub. Không triển khai fake bank integration.
 
-Triển khai Vercel dùng hai project từ repo `minkoi007cs/Money_Tracker`, nhánh `main`: `apps/web/` Next.js và `apps/api/` FastAPI (`index.py` entrypoint). Backend cần PostgreSQL riêng đã chạy Alembic migration, `APP_ENV=production`, `JWT_SECRET` và CORS origin chính xác. Web project cần `API_BASE_URL` server-side trỏ tới backend. Repo `app_system` đang chứa ứng dụng khác, không đổi cấu hình project Vercel của ứng dụng đó. Quy trình chi tiết ở `README.md` và tiến độ thực tế ở `process.md`.
+Triển khai Vercel dùng hai project từ repo `minkoi007cs/Money_Tracker`, nhánh `main`: `apps/web/` Next.js và `apps/api/` FastAPI (`index.py` entrypoint). Backend cần database tenant riêng đã chạy Alembic migration, `APP_ENV=production`, cấu hình App System (`INFRA_URL`, `INFRA_APP_ID`, `INFRA_SECRET_KEY`) và CORS origin chính xác. Web project cần `NEXT_PUBLIC_AUTH_MODE=hub`, cấu hình App System, `APP_URL`, và `API_BASE_URL` server-side trỏ tới backend. Repo/project `app_system` giữ vai trò hub, không đổi cấu hình deploy của nó. Quy trình chi tiết ở `README.md` và tiến độ thực tế ở `process.md`.
 
 ### Dữ liệu
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -18,6 +18,10 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("error");
+    if (code) setError(code === "denied" ? "App System did not authorize this sign-in." : "Sign-in did not finish. Please try again.");
+  }, []);
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError(null);
@@ -33,6 +37,26 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
     } finally {
       setBusy(false);
     }
+  }
+  if (process.env.NEXT_PUBLIC_AUTH_MODE === "hub") {
+    return (
+      <div className="auth-layout">
+        <div className="auth-aside">
+          <Link className="brand" href="/"><span className="brand-mark"><Wallet size={20} /></span><span>where<span className="brand-light">money</span></span></Link>
+          <div className="auth-aside-copy"><span className="hero-pill">A calmer way to see your spending</span><h2>Clarity looks good on your money.</h2><p>From a messy statement to a picture that finally makes sense.</p></div>
+          <small>Private by design · Built for everyday decisions</small>
+        </div>
+        <main className="auth-main"><div className="auth-card">
+          <span className="auth-icon"><LockKeyhole size={23} /></span>
+          <h1>{mode === "login" ? "Welcome back" : "Create your workspace"}</h1>
+          <p>App System securely handles your sign-in. Return here to track your bank statements.</p>
+          <ErrorBox message={error} />
+          <Link className="button button-primary button-full" href="/auth/start?next=/dashboard">Continue with App System <ArrowRight size={17} /></Link>
+          <div className="auth-switch">You can sign in or create an account on the next page.</div>
+          <div className="auth-privacy"><LockKeyhole size={15} /> Your statements are never used for advertising.</div>
+        </div></main>
+      </div>
+    );
   }
   return (
     <div className="auth-layout">

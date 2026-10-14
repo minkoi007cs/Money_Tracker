@@ -47,10 +47,35 @@ export type Recurring = {
   occurrences: number;
 };
 
+let sessionCheck: Promise<void> | null = null;
+
+export async function ensureHubSession(): Promise<void> {
+  if (process.env.NEXT_PUBLIC_AUTH_MODE !== "hub") return;
+  if (!sessionCheck) {
+    const check = async () => {
+      const response = await fetch("/auth/session", { method: "POST", cache: "no-store" });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.error?.message || "Please sign in again");
+      }
+    };
+    const run = (async () => {
+      if (typeof navigator !== "undefined" && navigator.locks) {
+        await navigator.locks.request("money-hub-session-refresh", check);
+      } else {
+        await check();
+      }
+    })();
+    sessionCheck = run.finally(() => { sessionCheck = null; });
+  }
+  return sessionCheck!;
+}
+
 export async function api<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  if (path !== "/auth/logout") await ensureHubSession();
   const headers = new Headers(options.headers);
   if (options.body && !(options.body instanceof FormData))
     headers.set("Content-Type", "application/json");
