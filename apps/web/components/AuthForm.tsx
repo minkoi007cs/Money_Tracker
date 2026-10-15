@@ -20,7 +20,11 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get("error");
-    if (code) setError(code === "denied" ? "App System did not authorize this sign-in." : "Sign-in did not finish. Please try again.");
+    if (code) setError(code === "denied"
+      ? "App System did not authorize this sign-in."
+      : code === "state"
+        ? "This sign-in link expired. Start a new sign-in below."
+        : "Sign-in did not finish. Please try again.");
   }, []);
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -51,7 +55,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
           <h1>{mode === "login" ? "Welcome back" : "Create your workspace"}</h1>
           <p>App System securely handles your sign-in. Return here to track your bank statements.</p>
           <ErrorBox message={error} />
-          <Link className="button button-primary button-full" href="/auth/start?next=/dashboard">Continue with App System <ArrowRight size={17} /></Link>
+          <a className="button button-primary button-full" href="/auth/start?next=/dashboard">Continue with App System <ArrowRight size={17} /></a>
           <div className="auth-switch">You can sign in or create an account on the next page.</div>
           <div className="auth-privacy"><LockKeyhole size={15} /> Your statements are never used for advertising.</div>
         </div></main>
