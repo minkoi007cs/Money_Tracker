@@ -19,7 +19,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { api, setToken, token } from "@/lib/api";
+import { api } from "@/lib/api";
 
 const nav = [
   { href: "/dashboard", label: "Overview", icon: ChartNoAxesCombined },
@@ -50,14 +50,9 @@ export default function AppShell({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!token()) {
-      router.replace("/login");
-      return;
-    }
     api<{ email: string }>("/me")
       .then(setUser)
       .catch(() => {
-        setToken(null);
         router.replace("/login");
       })
       .finally(() => setLoading(false));
@@ -131,8 +126,8 @@ export default function AppShell({
           </div>
           <button
             className="nav-item logout"
-            onClick={() => {
-              setToken(null);
+            onClick={async () => {
+              await api("/auth/logout", { method: "POST" }).catch(() => {});
               router.push("/");
             }}
           >
@@ -181,6 +176,19 @@ export default function AppShell({
           Where Did My Money Go? · A clearer view of your money, on your terms.
         </footer>
       </div>
+      <nav className="mobile-bottom-nav" aria-label="Quick navigation">
+        {[
+          { href: "/dashboard", label: "Overview", icon: ChartNoAxesCombined },
+          { href: "/transactions", label: "Activity", icon: CreditCard },
+          { href: "/import", label: "Import", icon: ArrowDownToLine },
+          { href: "/settings", label: "Settings", icon: Settings2 },
+        ].map((item) => (
+          <Link key={item.href} href={item.href} className={pathname === item.href ? "active" : ""} aria-current={pathname === item.href ? "page" : undefined}>
+            <item.icon size={21} strokeWidth={1.9} />
+            <span>{item.label}</span>
+          </Link>
+        ))}
+      </nav>
     </div>
   );
 }

@@ -12,9 +12,10 @@ import {
   Repeat2,
   TrendingUp,
 } from "lucide-react";
+import BankConnections from "@/components/BankConnections";
 import AppShell from "@/components/AppShell";
 import { EmptyState, ErrorBox, Loading } from "@/components/UI";
-import { api, money, shortDate, Summary, Transaction } from "@/lib/api";
+import { api, balanceLabel, BankAccount, fetchedAt, money, shortDate, Summary, Transaction } from "@/lib/api";
 
 type Period = "this" | "last" | "all";
 function range(period: Period) {
@@ -36,9 +37,13 @@ function range(period: Period) {
 }
 
 export default function Dashboard() {
-  const [period, setPeriod] = useState<Period>("all");
+  const [period, setPeriod] = useState<Period>("this");
+  const [accountId, setAccountId] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [chosenCurrency, setChosenCurrency] = useState("USD");
   const [summary, setSummary] = useState<Record<string, Summary>>({});
   const [recent, setRecent] = useState<Transaction[]>([]);
+  const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [comparison, setComparison] = useState<{
     currencies: Record<string, { difference: string; percent: string | null }>;
   } | null>(null);
@@ -46,28 +51,37 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     setLoading(true);
+    let active = true;
+    const params = new URLSearchParams(range(period).replace(/^\?/, ""));
+    if (accountId) params.set("account_id", accountId);
+    const recentParams = new URLSearchParams(params);
+    recentParams.set("page_size", "5");
     Promise.all([
       api<{ currencies: Record<string, Summary> }>(
-        `/analytics/summary${range(period)}`,
+        `/analytics/summary?${params}`,
       ),
-      api<{ items: Transaction[] }>("/transactions?page_size=5"),
+      api<{ items: Transaction[] }>(`/transactions?${recentParams}`),
+      api<BankAccount[]>("/accounts"),
       api<{
         currencies: Record<
           string,
           { difference: string; percent: string | null }
         >;
-      }>("/analytics/comparison"),
+      }>(`/analytics/comparison${accountId ? `?account_id=${encodeURIComponent(accountId)}` : ""}`),
     ])
-      .then(([a, b, c]) => {
+      .then(([a, b, accountsResult, c]) => {
+        if (!active) return;
         setSummary(a.currencies);
         setRecent(b.items);
+        setAccounts(accountsResult);
         setComparison(c);
         setError(null);
       })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [period]);
-  const currency = Object.keys(summary)[0] || "USD";
+      .catch((e) => { if (active) setError(e.message); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [period, accountId, refreshKey]);
+  const currency = summary[chosenCurrency] ? chosenCurrency : Object.keys(summary)[0] || "USD";
   const data = summary[currency];
   const max = Math.max(
     ...(data?.categories.map((x) => Number(x.amount)) || []),
@@ -88,8 +102,7 @@ export default function Dashboard() {
     >
       <div className="intro-row">
         <p>
-          Your money at a glance. Every number comes from your imported
-          transactions.
+          Chase and PNC in one place. Bank balances and posted transaction statistics are shown separately.
         </p>
         <label className="period-select">
           <CalendarDays size={17} />
@@ -104,15 +117,33 @@ export default function Dashboard() {
           </select>
         </label>
       </div>
+      <div className="filters bank-filters">
+        <label>Account<select aria-label="Dashboard account" value={accountId} onChange={event => setAccountId(event.target.value)}>
+          <option value="">All accounts</option>
+          {accounts.map(account => <option key={account.id} value={account.id}>{account.name}{account.mask ? ` · ••${account.mask}` : ""}</option>)}
+        </select></label>
+        {Object.keys(summary).length > 1 && <label>Currency<select aria-label="Dashboard currency" value={currency} onChange={event => setChosenCurrency(event.target.value)}>{Object.keys(summary).map(c => <option key={c}>{c}</option>)}</select></label>}
+      </div>
       <ErrorBox message={error} />
+      {accounts.length > 0 && <section className="account-balances panel">
+        <div className="panel-heading"><div><span className="section-kicker">BANK BALANCES</span><h2>Your accounts</h2></div><Link href="/settings" className="panel-link">Manage accounts <ArrowRight size={16} /></Link></div>
+        <div className="balance-grid">{accounts.map(account => <div className="balance-item" key={account.id}><span>{account.name}</span><strong>{account.balance === null ? "Unavailable" : money(account.balance, account.currency)}</strong>
+          {account.source === "bank" ? <>
+            <small>{balanceLabel(account)}{account.mask ? ` · ••${account.mask}` : ""}{account.environment === "sandbox" ? " · TEST DATA" : ""}</small>
+            <small>{account.available_balance != null ? `Available: ${money(account.available_balance, account.currency)}` : "Available balance not provided"}</small>
+            <small>Fetched {fetchedAt(account.balance_fetched_at)}</small>
+            {account.connection_status === "needs_login" && <small>Saved balance · reconnect to update</small>}
+          </> : <small>Starting balance {money(account.opening_balance, account.currency)} + assigned transactions</small>}</div>)}</div>
+      </section>}
+      <BankConnections autoSync compact onUpdated={() => setRefreshKey(value => value + 1)} />
       {loading ? (
         <Loading />
       ) : !data ? (
         <EmptyState
-          title="Your dashboard starts with a statement"
-          text="Upload a CSV to see where your money went, what changed, and what keeps coming back."
-          href="/import"
-          action="Import your first CSV"
+          title="Your dashboard starts with a transaction"
+          text="Connect Chase or PNC above. Statistics will appear when posted transactions arrive for the selected period."
+          href="/transactions"
+          action="Add your first transaction"
         />
       ) : (
         <>
@@ -144,7 +175,7 @@ export default function Dashboard() {
               <div>
                 <span>Net cash flow</span>
                 <strong>{money(data.net, currency)}</strong>
-                <small>Income minus spending and refunds</small>
+                <small>Income + refunds − spending</small>
               </div>
             </div>
             <div className="stat-card">
@@ -308,7 +339,7 @@ export default function Dashboard() {
                       <div>
                         <strong>{t.merchant}</strong>
                         <small>
-                          {shortDate(t.date)} · {t.category}
+                          {shortDate(t.date)} · {accounts.find(a => a.id === t.account_id)?.name || "Unassigned"} · {t.pending ? "Pending" : t.category}
                         </small>
                       </div>
                       <b className={Number(t.amount) >= 0 ? "positive" : ""}>

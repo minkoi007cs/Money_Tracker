@@ -1,6 +1,3 @@
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
 export type Transaction = {
   id: string;
   date: string;
@@ -16,7 +13,27 @@ export type Transaction = {
   is_refund: boolean;
   is_subscription: boolean;
   notes: string;
-  import_id: string;
+  import_id: string | null;
+  pending: boolean;
+  source: "bank" | "manual_or_csv";
+  account_id: string | null;
+};
+
+export type BankAccount = {
+  id: string;
+  name: string;
+  currency: string;
+  opening_balance: string;
+  balance: string | null;
+  source?: "bank" | "manual";
+  available_balance?: string | null;
+  balance_fetched_at?: string | null;
+  account_type?: string | null;
+  mask?: string | null;
+  connection_id?: string | null;
+  connection_status?: string | null;
+  institution_name?: string | null;
+  environment?: "sandbox" | "production" | null;
 };
 export type Summary = {
   income: string;
@@ -41,27 +58,39 @@ export type Recurring = {
   occurrences: number;
 };
 
-export function token() {
-  return typeof window === "undefined"
-    ? null
-    : localStorage.getItem("money_token");
-}
+let sessionCheck: Promise<void> | null = null;
 
-export function setToken(value: string | null) {
-  if (typeof window === "undefined") return;
-  if (value) localStorage.setItem("money_token", value);
-  else localStorage.removeItem("money_token");
+export async function ensureHubSession(): Promise<void> {
+  if (process.env.NEXT_PUBLIC_AUTH_MODE !== "hub") return;
+  if (!sessionCheck) {
+    const check = async () => {
+      const response = await fetch("/auth/session", { method: "POST", cache: "no-store" });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.error?.message || "Please sign in again");
+      }
+    };
+    const run = (async () => {
+      if (typeof navigator !== "undefined" && navigator.locks) {
+        await navigator.locks.request("money-hub-session-refresh", check);
+      } else {
+        await check();
+      }
+    })();
+    sessionCheck = run.finally(() => { sessionCheck = null; });
+  }
+  return sessionCheck!;
 }
 
 export async function api<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  if (path !== "/auth/logout") await ensureHubSession();
   const headers = new Headers(options.headers);
-  if (token()) headers.set("Authorization", `Bearer ${token()}`);
   if (options.body && !(options.body instanceof FormData))
     headers.set("Content-Type", "application/json");
-  const response = await fetch(`${API_URL}/api/v1${path}`, {
+  const response = await fetch(`/api/v1${path}`, {
     ...options,
     headers,
     cache: "no-store",
@@ -87,4 +116,26 @@ export function shortDate(value: string) {
     "en-US",
     { month: "short", day: "numeric", year: "numeric" },
   );
+}
+
+export type BankConnection = {
+  id: string;
+  institution_name: string;
+  environment: "sandbox" | "production";
+  status: "connected" | "needs_login";
+  history_ready: boolean;
+  error_code: string | null;
+  last_synced_at: string | null;
+};
+export type BankStatus = {
+  configured: boolean;
+  environment: "sandbox" | "production" | null;
+  connections: BankConnection[];
+};
+
+export function balanceLabel(account: BankAccount) {
+  return account.account_type === "credit" ? "Amount owed" : "Current balance";
+}
+export function fetchedAt(value: string | null | undefined) {
+  return value ? new Date(value).toLocaleString() : "Not updated yet";
 }

@@ -4,14 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write app components lib"
   },
   "dependencies": {
+    "@vercel/oidc": "^4.0.1",
     "lucide-react": "^0.468.0",
-    "next": "^16.1.0",
+    "next": "^16.4.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

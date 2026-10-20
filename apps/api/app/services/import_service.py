@@ -26,10 +26,12 @@ def process_import(db: Session, user_id: str, filename: str, data: bytes, header
         profile = db.scalar(select(ImportProfile).where(ImportProfile.user_id == user_id, ImportProfile.headers_hash == signature))
         if profile:
             profile.name = profile_name
-            profile.mapping_json = json.dumps(mapping)
+            profile.mapping_json = json.dumps({key: value for key, value in mapping.items() if key not in ("account_id", "account_currency")})
         else:
-            db.add(ImportProfile(user_id=user_id, name=profile_name, headers_hash=signature, mapping_json=json.dumps(mapping)))
+            db.add(ImportProfile(user_id=user_id, name=profile_name, headers_hash=signature, mapping_json=json.dumps({key: value for key, value in mapping.items() if key not in ("account_id", "account_currency")})))
     settings = db.get(UserSettings, user_id)
+    account_id = mapping.get("account_id")
+    account_currency = mapping.get("account_currency")
     batch = ImportBatch(user_id=user_id, filename=filename[:255], file_hash=hashlib.sha256(data).hexdigest(), row_count=len(rows))
     db.add(batch)
     db.flush()
@@ -38,13 +40,21 @@ def process_import(db: Session, user_id: str, filename: str, data: bytes, header
     errors = []
     for number, row in enumerate(rows, start=2):
         try:
-            values = normalize_row(row, mapping, user_id, settings.currency if settings else "USD")
+            values = normalize_row(row, mapping, user_id, account_currency or (settings.currency if settings else "USD"))
         except (ValueError, KeyError, TypeError) as exc:
             batch.rejected_count += 1
             if len(errors) < 10:
                 errors.append({"row": number, "reason": str(exc)})
             continue
         fingerprint = values["fingerprint"]
+        if account_id:
+            if values["currency"] != account_currency:
+                batch.rejected_count += 1
+                if len(errors) < 10:
+                    errors.append({"row": number, "reason": "Currency does not match the selected account"})
+                continue
+            fingerprint = hashlib.sha256(f"{account_id}|{fingerprint}".encode()).hexdigest()
+            values["fingerprint"] = fingerprint
         if fingerprint in seen:
             batch.duplicate_count += 1
             continue
@@ -68,7 +78,7 @@ def process_import(db: Session, user_id: str, filename: str, data: bytes, header
                 values["is_refund"] = True
         if values["amount"] < 0:
             in_batch_expenses[(values["merchant_name"], values["amount"])].append(values["transaction_date"])
-        db.add(Transaction(user_id=user_id, import_id=batch.id, **values))
+        db.add(Transaction(user_id=user_id, import_id=batch.id, account_id=account_id, **values))
         batch.imported_count += 1
     db.commit()
     return {"id": batch.id, "row_count": batch.row_count, "imported_count": batch.imported_count, "duplicate_count": batch.duplicate_count, "rejected_count": batch.rejected_count, "errors": errors}

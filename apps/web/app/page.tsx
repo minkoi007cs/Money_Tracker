@@ -38,8 +38,8 @@ export default function Home() {
             Know where your money <em>really</em> goes.
           </h1>
           <p>
-            Turn bank CSV statements into a clear, calm picture of your
-            spending. No bank connection. No judgment. Just useful answers.
+            Import bank CSV statements or add transactions by hand to see a
+            clear picture of your spending. No bank connection.
           </p>
           <div className="hero-actions">
             <Link className="button button-primary button-lg" href="/signup">
@@ -87,7 +87,7 @@ export default function Home() {
             </div>
           </div>
           <div className="preview-footer">
-            Illustrative example · Your dashboard uses only your uploads
+            Illustrative example · Your dashboard uses only your own entries
           </div>
         </div>
       </main>

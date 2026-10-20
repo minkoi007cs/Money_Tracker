@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Download, ShieldCheck, Trash2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import InstallApp from "@/components/InstallApp";
+import BankConnections from "@/components/BankConnections";
+import BankAccounts from "@/components/BankAccounts";
 import { ErrorBox, Loading } from "@/components/UI";
-import { api, API_URL, setToken, token } from "@/lib/api";
+import { api, ensureHubSession } from "@/lib/api";
 
 export default function Settings() {
   const router = useRouter();
@@ -35,16 +38,15 @@ export default function Settings() {
       setError((e as Error).message);
     }
   }
-  async function exportCsv() {
+  async function exportCsv(path = "/export/transactions", filename = "transactions.csv") {
     try {
-      const response = await fetch(`${API_URL}/api/v1/export/transactions`, {
-        headers: { Authorization: `Bearer ${token()}` },
-      });
+      await ensureHubSession();
+      const response = await fetch(`/api/v1${path}`, { cache: "no-store" });
       if (!response.ok) throw new Error("Could not export transactions");
       const url = URL.createObjectURL(await response.blob());
       const link = document.createElement("a");
       link.href = url;
-      link.download = "transactions.csv";
+      link.download = filename;
       link.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -56,9 +58,8 @@ export default function Settings() {
     try {
       await api(path, { method: "DELETE" });
       if (path === "/me") {
-        setToken(null);
         router.push("/");
-      } else setNotice("All imported financial data has been deleted.");
+      } else setNotice("Bank connections and financial data have been deleted.");
     } catch (e) {
       setError((e as Error).message);
     }
@@ -81,6 +82,9 @@ export default function Settings() {
         <Loading />
       ) : (
         <div className="settings-grid">
+          <BankConnections />
+          <BankAccounts />
+          <InstallApp />
           <section className="panel">
             <div className="panel-heading">
               <div>
@@ -135,15 +139,19 @@ export default function Settings() {
                 <strong>Export your transactions</strong>
                 <span>Download a CSV with the data in your workspace.</span>
               </div>
-              <button className="button button-outline" onClick={exportCsv}>
+              <button className="button button-outline" onClick={() => exportCsv()}>
                 <Download size={16} /> Export CSV
               </button>
             </div>
             <div className="privacy-action">
+              <div><strong>Export bank accounts</strong><span>Download names, currencies, and starting/current balances.</span></div>
+              <button className="button button-outline" onClick={() => exportCsv("/export/accounts", "accounts.csv")}><Download size={16} /> Export accounts</button>
+            </div>
+            <div className="privacy-action">
               <div>
-                <strong>Delete all imported data</strong>
+                <strong>Disconnect banks and delete data</strong>
                 <span>
-                  Removes transactions and import history. Your account stays
+                  Disconnects banks and removes financial data. Your profile stays
                   active.
                 </span>
               </div>
@@ -152,7 +160,7 @@ export default function Settings() {
                 onClick={() =>
                   erase(
                     "/data",
-                    "Delete all transactions and import history? This cannot be undone.",
+                    "Disconnect all banks and delete all financial data? This cannot be undone.",
                   )
                 }
               >
@@ -162,14 +170,14 @@ export default function Settings() {
             <div className="privacy-action">
               <div>
                 <strong>Delete your account</strong>
-                <span>Removes your account and all its financial data.</span>
+                <span>{process.env.NEXT_PUBLIC_AUTH_MODE === "hub" ? "Removes your Money Tracker profile and financial data. Your App System sign-in remains active." : "Removes your account and all its financial data."}</span>
               </div>
               <button
                 className="button button-danger"
                 onClick={() =>
                   erase(
                     "/me",
-                    "Permanently delete your account and every transaction? This cannot be undone.",
+                    process.env.NEXT_PUBLIC_AUTH_MODE === "hub" ? "Permanently delete your Money Tracker profile and every transaction? Your App System sign-in will remain. This cannot be undone." : "Permanently delete your account and every transaction? This cannot be undone.",
                   )
                 }
               >

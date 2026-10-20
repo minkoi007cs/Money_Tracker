@@ -1790,6 +1790,71 @@ p {
 .mobile-overlay {
   display: none;
 }
+.mobile-bottom-nav {
+  display: none;
+}
+.install-panel {
+  grid-column: 1 / -1;
+}
+.install-steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 18px 0;
+}
+.install-steps p {
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  line-height: 1.55;
+}
+.transaction-actions {
+  margin-top: 0;
+}
+.manual-checkbox {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.4;
+}
+.manual-checkbox input {
+  width: auto;
+  margin-top: 3px;
+}
+.account-balances {
+  margin-bottom: 20px;
+}
+.balance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+.balance-item {
+  padding: 16px;
+  background: #f7faf5;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.balance-item span,
+.balance-item strong,
+.balance-item small,
+.bank-account-row span,
+.bank-account-row small {
+  display: block;
+}
+.balance-item strong { font-size: 22px; margin: 7px 0; }
+.balance-item small, .bank-account-row small { color: var(--muted); font-size: 11px; }
+.bank-account-row { display: flex; justify-content: space-between; gap: 14px; padding: 14px 0; border-top: 1px solid var(--line); }
+.bank-account-row > strong { text-align: right; }
+.bank-account-controls { text-align: right; }
+.bank-account-controls > span { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+.bank-account-controls button { border: 0; padding: 4px; background: transparent; color: var(--green); font-size: 11px; font-weight: 700; }
+.bank-account-form { display: grid; grid-template-columns: 1.4fr 0.7fr 1fr auto; align-items: end; gap: 10px; margin-top: 18px; }
+.bank-account-form label, .import-account-select { display: grid; gap: 6px; font-size: 12px; font-weight: 700; }
+.bank-account-form input, .bank-account-form select, .import-account-select select { width: 100%; min-height: 42px; padding: 8px 10px; border: 1px solid #dce4dc; border-radius: 10px; background: #fff; }
+.import-account-select { max-width: 350px; margin-bottom: 20px; }
 @media (max-width: 1100px) {
   .stat-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1820,6 +1885,36 @@ p {
     border: 0;
     background: rgba(20, 39, 28, 0.35);
   }
+  .mobile-bottom-nav {
+    position: fixed;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    background: #fff;
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -4px 24px rgba(30, 46, 40, 0.06);
+  }
+  .mobile-bottom-nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 48px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .mobile-bottom-nav a.active {
+    color: var(--green);
+  }
+  .main-area {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom));
+  }
   .topbar {
     justify-content: flex-start;
     gap: 13px;
@@ -1844,6 +1939,10 @@ p {
   }
 }
 @media (max-width: 650px) {
+  .bank-account-form { grid-template-columns: 1fr; }
+  .install-steps {
+    grid-template-columns: 1fr;
+  }
   .topbar {
     padding: 0 17px;
   }
@@ -1920,6 +2019,9 @@ p {
   .landing-nav > div {
     gap: 12px;
   }
+  .landing-nav > div > a:first-child {
+    display: none;
+  }
   .landing-main {
     padding: 40px 20px;
   }
@@ -1945,4 +2047,16 @@ p {
   .result-stats strong {
     font-size: 22px;
   }
+}
+
+.bank-connections { margin-bottom: 24px; }
+.bank-connections .info-banner { margin: 12px 0; }
+.bank-actions { margin-top: 18px; flex-wrap: wrap; }
+.bank-filters { margin: 20px 0; flex-wrap: wrap; }
+.bank-filters label { min-width: 150px; }
+.balance-item small { display: block; }
+.bank-account-row .button-row { flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 640px) {
+  .bank-connections .bank-account-row { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .bank-filters label { width: 100%; }
 }
