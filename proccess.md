@@ -12,3 +12,5 @@ Ngày 2026-10-19 đã thêm Plaid read-only vào mã local để hiển thị s�
 Thiết lập tiếp 2026-10-19: Plaid Personal use đang chờ người dùng tạo/xác minh tài khoản và chấp nhận điều khoản; hướng đi là Trial miễn phí. 25 pytest qua, gồm chặn account injection qua CSV mapping.
 
 Mã đã push tại `08c4a7e`, draft PR #1; Vercel Preview check qua. API project riêng đã tạo và cấu hình cơ bản. Sandbox API exchange/sync ban đầu thành công (chưa tải lịch sử); đang chờ người dùng hoàn tất Plaid Trial và MFA App System trước production.
+
+Release tiếp 2026-10-19: commit `3725479` thêm OIDC cho frontend gọi API có bảo vệ và vá dependencies. Plaid Trial đang chờ review 2–3 ngày làm việc. Cặp khóa mới auth:read đã được người dùng xác nhận và cấu hình; PostgreSQL đã migrate 005/check qua. API đã lên production, frontend đang triển khai.

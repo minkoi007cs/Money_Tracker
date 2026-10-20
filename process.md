@@ -57,6 +57,8 @@ Trước khi làm việc, đọc file này rồi `tech.md`. Sau mỗi thay đổ
 | 2026-10-14 | `2300373` | `Prepare production Money Tracker API and document tenant database` | Chốt Python 3.12, health kiểm tra PostgreSQL, chặn fallback local trên Vercel, cập nhật trạng thái App System tenant | 14 pytest; Next build hub; PostgreSQL migration/check; health 200; Vercel thiếu cấu hình từ chối khởi động |
 | 2026-10-19 | `08c4a7e` | `Add read-only Plaid bank connections and balance dashboard` | Tích hợp Plaid, bank balance snapshots, transaction sync/lease, dashboard filter, hướng dẫn và bảo vệ CSV ownership | 25 pytest; Next hub build; SQLite migration/check; PostgreSQL SQL offline; UI demo/mobile; GitHub Preview check |
 
+| 2026-10-19 | `3725479` | `Authenticate protected API calls with Vercel OIDC and patch dependencies` | Proxy gửi token OIDC phía server, fail closed với redirect; nâng Next.js tối thiểu 16.4.2 và vá dependencies; cập nhật tài liệu deploy | Next.js hub build/TypeScript qua; root npm audit 0; nested lock được đồng bộ tiếp ở lượt này |
+
 Hash trong bảng được lấy từ Git sau khi commit. Các commit chỉ ghi nhật ký có thể xem trong `git log` để tránh vòng lặp tự tham chiếu.
 
 ## Việc còn lại
