@@ -4,6 +4,8 @@ Trước khi làm việc, đọc file này rồi `tech.md`. Sau mỗi thay đổ
 
 ## Trạng thái
 
+- 2026-10-20 (Git): PR #1 đã merge vào main bằng merge commit `8f3ec0e`; không force push. API project đã nối cùng GitHub repo, root/apps và lệnh build riêng giữ nguyên. Frontend tự tạo production deployment từ main; lượt phát hành đã promote và kiểm thử trước đó vẫn đang phục vụ trong khi Git build chạy. Đã xóa file khóa auth tạm trên máy sau khi lưu Vercel.
+
 - 2026-10-20 (production đã kiểm tra): frontend https://money-tracker-rho-bay.vercel.app và API production đã promote thành công. Đăng nhập thật qua App System/HTTPS → dashboard → API có bảo vệ → Neon tenant hoạt động. Trình duyệt đã preview/confirm CSV giả 3 dòng, dashboard trả thu $100.00 / chi $19.99 / net $80.01; export CSV tải về có đúng 3 dòng. Đã xóa chính xác batch thử và 3 giao dịch giả, xác nhận còn 0 giao dịch của người dùng; giữ profile/settings. Manifest và service worker trả 200, API frontend chưa đăng nhập trả 401; API health qua Vercel curl trả ok. PostgreSQL thực tế ở migration 005, schema check qua; 25 pytest, Next.js hub build/TypeScript và hai npm audit đều qua (0 vulnerabilities). Đây là bản có thể mở/cài PWA để thử; cài trên thiết bị iOS/Android thật chưa được xác minh.
 - Plaid Trial đã nộp, Dashboard báo chờ review 2–3 business days. Chưa có secret/quyền Production, nút Connect bank đang tắt đúng thiết kế; chưa có số dư hoặc giao dịch Chase/PNC thật. Sau duyệt cần cấu hình secret phía API, đăng ký redirect HTTPS, deploy lại và để người dùng tự cấp quyền từng bank trong Plaid Link. Không tạo lịch tự kiểm tra hoặc gói trả phí.
 
