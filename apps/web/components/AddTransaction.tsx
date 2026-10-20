@@ -27,7 +27,7 @@ export default function AddTransaction({ onClose, onSaved }: { onClose: () => vo
 
   useEffect(() => {
     Promise.all([api<{ currency: string }>("/settings"), api<BankAccount[]>("/accounts")])
-      .then(([settings, found]) => { setCurrency(settings.currency); setAccounts(found); })
+      .then(([settings, found]) => { setCurrency(settings.currency); setAccounts(found.filter(account => account.source !== "bank")); })
       .catch(() => {});
   }, []);
 

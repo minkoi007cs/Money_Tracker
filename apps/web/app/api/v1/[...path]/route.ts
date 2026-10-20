@@ -50,7 +50,7 @@ async function proxy(request: NextRequest, context: Context) {
       headers,
       body,
       cache: "no-store",
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(endpoint.startsWith("banks/") ? 100000 : 30000),
     });
   } catch {
     return NextResponse.json({ error: { code: "API_UNAVAILABLE", message: "The finance service is temporarily unavailable" } }, { status: 503 });

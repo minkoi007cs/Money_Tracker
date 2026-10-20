@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Download, ShieldCheck, Trash2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import InstallApp from "@/components/InstallApp";
+import BankConnections from "@/components/BankConnections";
 import BankAccounts from "@/components/BankAccounts";
 import { ErrorBox, Loading } from "@/components/UI";
 import { api, ensureHubSession } from "@/lib/api";
@@ -58,7 +59,7 @@ export default function Settings() {
       await api(path, { method: "DELETE" });
       if (path === "/me") {
         router.push("/");
-      } else setNotice("All imported financial data has been deleted.");
+      } else setNotice("Bank connections and financial data have been deleted.");
     } catch (e) {
       setError((e as Error).message);
     }
@@ -81,6 +82,7 @@ export default function Settings() {
         <Loading />
       ) : (
         <div className="settings-grid">
+          <BankConnections />
           <BankAccounts />
           <InstallApp />
           <section className="panel">
@@ -147,9 +149,9 @@ export default function Settings() {
             </div>
             <div className="privacy-action">
               <div>
-                <strong>Delete all imported data</strong>
+                <strong>Disconnect banks and delete data</strong>
                 <span>
-                  Removes transactions and import history. Your account stays
+                  Disconnects banks and removes financial data. Your profile stays
                   active.
                 </span>
               </div>
@@ -158,7 +160,7 @@ export default function Settings() {
                 onClick={() =>
                   erase(
                     "/data",
-                    "Delete all transactions and import history? This cannot be undone.",
+                    "Disconnect all banks and delete all financial data? This cannot be undone.",
                   )
                 }
               >

@@ -52,7 +52,7 @@ export default function ImportPage() {
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [accountId, setAccountId] = useState("");
 
-  useEffect(() => { api<BankAccount[]>("/accounts").then(setAccounts).catch(() => {}); }, []);
+  useEffect(() => { api<BankAccount[]>("/accounts").then(found => setAccounts(found.filter(account => account.source !== "bank"))).catch(() => {}); }, []);
 
   async function choose(event: ChangeEvent<HTMLInputElement>) {
     const chosen = event.target.files?.[0];

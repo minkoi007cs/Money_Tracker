@@ -13,7 +13,9 @@ export type Transaction = {
   is_refund: boolean;
   is_subscription: boolean;
   notes: string;
-  import_id: string;
+  import_id: string | null;
+  pending: boolean;
+  source: "bank" | "manual_or_csv";
   account_id: string | null;
 };
 
@@ -22,7 +24,16 @@ export type BankAccount = {
   name: string;
   currency: string;
   opening_balance: string;
-  balance: string;
+  balance: string | null;
+  source?: "bank" | "manual";
+  available_balance?: string | null;
+  balance_fetched_at?: string | null;
+  account_type?: string | null;
+  mask?: string | null;
+  connection_id?: string | null;
+  connection_status?: string | null;
+  institution_name?: string | null;
+  environment?: "sandbox" | "production" | null;
 };
 export type Summary = {
   income: string;
@@ -105,4 +116,26 @@ export function shortDate(value: string) {
     "en-US",
     { month: "short", day: "numeric", year: "numeric" },
   );
+}
+
+export type BankConnection = {
+  id: string;
+  institution_name: string;
+  environment: "sandbox" | "production";
+  status: "connected" | "needs_login";
+  history_ready: boolean;
+  error_code: string | null;
+  last_synced_at: string | null;
+};
+export type BankStatus = {
+  configured: boolean;
+  environment: "sandbox" | "production" | null;
+  connections: BankConnection[];
+};
+
+export function balanceLabel(account: BankAccount) {
+  return account.account_type === "credit" ? "Amount owed" : "Current balance";
+}
+export function fetchedAt(value: string | null | undefined) {
+  return value ? new Date(value).toLocaleString() : "Not updated yet";
 }

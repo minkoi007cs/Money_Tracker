@@ -33,6 +33,25 @@ class UserSettings(Base):
     timezone: Mapped[str] = mapped_column(String(64), default="America/New_York")
 
 
+class BankConnection(Base):
+    __tablename__ = "bank_connections"
+    __table_args__ = (UniqueConstraint("user_id", "institution_id", "environment", name="uq_bank_user_institution_environment"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    item_id: Mapped[str] = mapped_column(String(255), unique=True)
+    access_token_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    environment: Mapped[str] = mapped_column(String(20))
+    institution_name: Mapped[str] = mapped_column(String(100))
+    institution_id: Mapped[str] = mapped_column(String(100))
+    cursor: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(30), default="connected")
+    error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    history_ready: Mapped[bool] = mapped_column(Boolean, default=False)
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    sync_lock_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class Account(Base):
     __tablename__ = "accounts"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
@@ -40,6 +59,13 @@ class Account(Base):
     name: Mapped[str] = mapped_column(String(100))
     currency: Mapped[str] = mapped_column(String(3))
     opening_balance: Mapped[Decimal] = mapped_column(Numeric(18, 2), default=0)
+    bank_connection_id: Mapped[str | None] = mapped_column(ForeignKey("bank_connections.id", ondelete="SET NULL"), index=True, nullable=True)
+    external_account_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
+    account_type: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    mask: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    bank_balance: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
+    available_balance: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
+    balance_fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
@@ -80,6 +106,10 @@ class Transaction(Base):
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     import_id: Mapped[str | None] = mapped_column(ForeignKey("import_batches.id", ondelete="CASCADE"), index=True, nullable=True)
     account_id: Mapped[str | None] = mapped_column(ForeignKey("accounts.id", ondelete="SET NULL"), index=True, nullable=True)
+    bank_connection_id: Mapped[str | None] = mapped_column(ForeignKey("bank_connections.id", ondelete="SET NULL"), index=True, nullable=True)
+    external_transaction_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
+    pending: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    bank_overrides: Mapped[str] = mapped_column(Text, default="[]", server_default="[]")
     transaction_date: Mapped[date] = mapped_column(Date)
     description_raw: Mapped[str] = mapped_column(Text)
     description_normalized: Mapped[str] = mapped_column(Text)

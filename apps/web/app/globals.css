@@ -2048,3 +2048,15 @@ p {
     font-size: 22px;
   }
 }
+
+.bank-connections { margin-bottom: 24px; }
+.bank-connections .info-banner { margin: 12px 0; }
+.bank-actions { margin-top: 18px; flex-wrap: wrap; }
+.bank-filters { margin: 20px 0; flex-wrap: wrap; }
+.bank-filters label { min-width: 150px; }
+.balance-item small { display: block; }
+.bank-account-row .button-row { flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 640px) {
+  .bank-connections .bank-account-row { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .bank-filters label { width: 100%; }
+}

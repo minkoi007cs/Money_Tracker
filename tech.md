@@ -6,7 +6,7 @@ Trước **mỗi** phiên làm việc phải đọc `process.md` để biết tr
 
 ## Mục tiêu và phạm vi
 
-Dashboard riêng tư để nhập sao kê CSV, chuẩn hóa số tiền, tránh bản ghi trùng, phân loại, xem dòng tiền, so sánh theo kỳ, phát hiện khoản lặp, tìm/lọc/sửa/xóa/xuất giao dịch. Không kết nối ngân hàng, tư vấn tài chính, gắn nhãn gian lận, hoặc dùng AI tính toán. Số tiền lấy từ giao dịch và `Decimal`; ngày dự kiến và phân loại suy đoán có nhãn ước tính.
+Dashboard riêng tư để nhập sao kê CSV, chuẩn hóa số tiền, tránh bản ghi trùng, phân loại, xem dòng tiền, so sánh theo kỳ, phát hiện khoản lặp, tìm/lọc/sửa/xóa/xuất giao dịch. Theo yêu cầu 2026-10-19, thêm đọc số dư/giao dịch qua Plaid cho Chase/PNC. Không tư vấn tài chính, gắn nhãn gian lận hoặc dùng AI tính toán. Số tiền lấy từ giao dịch và `Decimal`; ngày dự kiến và phân loại suy đoán có nhãn ước tính.
 
 ## Kiến trúc
 
@@ -15,6 +15,7 @@ Browser / installed PWA → Next.js App Router / TypeScript / Tailwind
         → App System hosted sign-in (authorization code + PKCE)
         → same-origin Next.js proxy (HttpOnly token-pair cookie, Origin check)
         → FastAPI REST + App System ES256 JWT verification + ownership checks
+        → Plaid Link OAuth → encrypted Item credentials → incremental Transactions Sync + bank balance snapshots
         → Services: CSV, normalization, categorization, recurring, analytics
         → SQLAlchemy → App System provisioned PostgreSQL tenant DB / SQLite local
 ```
@@ -63,3 +64,8 @@ Hash mật khẩu, JWT secret ở env; production bắt buộc secret mạnh và
 ## Quyết định cần theo dõi
 
 Local auth là adapter hiện tại vì không có Supabase credential. PostgreSQL là database production, SQLite là mặc định local. CSV gốc xóa ngay sau request; preview và confirm upload cùng file. Mapping được lưu theo bộ headers khi người dùng chọn. Detector recurring mặc định chỉ đề xuất income hoặc các nhóm bill/subscription, tránh gắn nhãn chi mua sắm thông thường. Các giới hạn hoặc thay đổi thiết kế phải ghi vào `process.md`.
+
+
+## Bank connections — 2026-10-19
+
+Migration 005 thêm `bank_connections` (user, institution, environment, encrypted access token, cursor, sync lease, status, last fetch), liên kết tài khoản ngân hàng và snapshot số dư, mã giao dịch Plaid, pending và các field override của người dùng. API `/api/v1/banks`: list/config, link-token, exchange, `/{id}/sync`, `/{id}/reconnected`, DELETE `/{id}`. Khóa truy cập mã hóa Fernet với khóa ngoài DB; không trả access token/Item ID/cursor cho browser. Đồng bộ theo mã provider, cursor commit cùng data; lease database tránh chạy trùng. Snapshot `/accounts/get` có thể cached. Không cộng lịch sử transaction vào bank-reported balance; pending loại khỏi analytics/recurring/insights. Dashboard có filter account/currency. Chưa có background webhook/cron hoặc ép refresh số dư real-time. Chi tiết và điều kiện Production ở `docs/bank-setup.md`. User request cho phép bắt đầu bank connect trước khi mốc release HTTPS cũ được nghiệm thu; không đánh dấu live integration hoàn thành.

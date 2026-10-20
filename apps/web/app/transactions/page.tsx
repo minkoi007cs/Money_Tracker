@@ -42,6 +42,7 @@ export default function TransactionsPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [accountId, setAccountId] = useState("");
   const [category, setCategory] = useState("");
   const [direction, setDirection] = useState("");
   const [start, setStart] = useState("");
@@ -64,6 +65,7 @@ export default function TransactionsPage() {
   useEffect(() => {
     const params = new URLSearchParams({ page: String(page), page_size: "25" });
     if (search) params.set("search", search);
+    if (accountId) params.set("account_id", accountId);
     if (category) params.set("category", category);
     if (direction) params.set("direction", direction);
     if (start) params.set("start", start);
@@ -83,6 +85,7 @@ export default function TransactionsPage() {
       .finally(() => setLoading(false));
   }, [
     page,
+    accountId,
     search,
     category,
     direction,
@@ -165,6 +168,10 @@ export default function TransactionsPage() {
         <span className="chip">{total} transactions</span>
       </div>
       <div className="filters">
+        <label><select aria-label="Bank account filter" value={accountId} onChange={event => { setAccountId(event.target.value); setPage(1); }}>
+          <option value="">All accounts</option>
+          {accounts.map(account => <option key={account.id} value={account.id}>{account.name}</option>)}
+        </select></label>
         <label className="search-field">
           <Search size={18} />
           <input
@@ -331,13 +338,14 @@ export default function TransactionsPage() {
                         <span className="recent-avatar">{t.merchant[0]}</span>
                         <span>
                           <strong>{t.merchant}</strong>
-                          <small>{t.description_raw}</small>
+                          <small>{accounts.find(a => a.id === t.account_id)?.name || "Unassigned"} · {t.description_raw}</small>
                         </span>
                       </div>
                     </td>
                     <td>
                       <span className="category-chip">{t.category}</span>
                       {t.is_transfer && <span className="tag">Transfer</span>}
+                      {t.pending && <span className="tag">Pending</span>}
                     </td>
                     <td>{shortDate(t.date)}</td>
                     <td
@@ -492,6 +500,7 @@ export default function TransactionsPage() {
                 <button
                   type="button"
                   className="button button-danger"
+                  disabled={selected.source === "bank"}
                   onClick={remove}
                 >
                   <Trash2 size={16} /> Delete transaction

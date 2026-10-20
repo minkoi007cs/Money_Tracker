@@ -6,7 +6,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
-A privacy-first spending dashboard built around bank CSV imports. It normalizes transactions, categorizes spending, shows month-to-month changes and recurring payments, and gives users control over export and deletion.
+A privacy-first spending dashboard with optional read-only Plaid bank connections and bank CSV imports. It normalizes transactions, categorizes spending, shows month-to-month changes and recurring payments, and gives users control over export and deletion.
 
 ## What works
 
@@ -18,7 +18,8 @@ A privacy-first spending dashboard built around bank CSV imports. It normalizes 
 - Conservative recurring-payment detection with confidence, estimated next date and user override
 - CSV export, deletion of one import, all financial data or the whole account
 - Manual transaction entry for quick tracking on a phone
-- Named bank accounts with starting balances; assigned CSV and manual transactions update each account balance
+- Optional Plaid Link for checking/savings/credit cards, bank-reported balance snapshots, incremental transaction sync, reconnect and revocation; see [bank setup](./docs/bank-setup.md). Real Chase/PNC access is not yet verified.
+- Named manual accounts with starting balances; assigned CSV and manual transactions update each account balance
 - Installable PWA for iPhone and Android, with a home-screen icon and mobile bottom navigation
 - Synthetic demo-data script (clearly labeled as demo data)
 
@@ -74,7 +75,7 @@ The API origin is read by the server-side Next.js proxy. The backend requires a 
 
 ## Install on a phone
 
-The frontend must be deployed on **HTTPS** with a working API and database. Open its URL on your phone and sign up or sign in. On iPhone, use Safari → Share → Add to Home Screen. On Android, use Chrome → menu → Install app (or Add to Home screen). Chrome may also show an Install app button in Settings. The app needs a connection to load financial data; the offline screen never caches account or transaction responses. It does not connect directly to a bank. Use a CSV statement or enter transactions manually.
+The frontend must be deployed on **HTTPS** with a working API and database. Open its URL on your phone and sign up or sign in. On iPhone, use Safari → Share → Add to Home Screen. On Android, use Chrome → menu → Install app (or Add to Home screen). Chrome may also show an Install app button in Settings. The app needs a connection to load financial data; the offline screen never caches account or transaction responses. Optional bank connections require Plaid configuration and approved real-bank access; see [bank setup](./docs/bank-setup.md). CSV and manual entry remain available.
 
 ## Data rules
 
@@ -91,4 +92,4 @@ Backend tests cover import, saved mapping profiles, duplicate detection, categor
 
 ## Current limits before public deployment
 
-This is a working finance tracker, not a live bank connection. The Money Tracker child app and its dedicated Neon PostgreSQL project were provisioned on 2026-10-14; migrations 001–004 and schema checks passed against that database. The production Vercel frontend and API still need their environment variables and a verified HTTPS sign-in/import flow before real statements are uploaded. The web proxy uses an HttpOnly, SameSite cookie and checks Origin on writes. Verify backup and retention settings before relying on the app as your only copy of a statement. Exact duplicate fingerprints can classify two genuinely identical charges on the same day as duplicates; review import counts. Recurring dates are estimates. CSV encoding beyond UTF-8 and bank-specific import profiles are not yet supported. No direct bank integration, currency conversion or LLM calls are included.
+The local code now includes a Plaid integration, tested with synthetic provider responses only. Migration 005, Plaid configuration and actual HTTPS bank linking remain to be completed on the production environment. The Money Tracker child app and its dedicated Neon PostgreSQL project were provisioned on 2026-10-14; migrations 001–004 and schema checks passed against that database. The production Vercel frontend and API still need their environment variables and a verified HTTPS sign-in/import flow before real statements are uploaded. The web proxy uses an HttpOnly, SameSite cookie and checks Origin on writes. Verify backup and retention settings before relying on the app as your only copy of a statement. Exact duplicate fingerprints can classify two genuinely identical charges on the same day as duplicates; review import counts. Recurring dates are estimates. CSV encoding beyond UTF-8 and bank-specific import profiles are not yet supported. Bank snapshots may be cached; no background webhook/cron or forced live-balance request is included. Currency conversion and LLM calls are not included.

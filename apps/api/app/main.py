@@ -17,6 +17,9 @@ from sqlalchemy import delete, func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from .banks import router as banks_router
+from .services.bank_service import disconnect_all, timestamp
+from .models import BankConnection
 from .analytics import compare_month, recurring_series, summarize
 from .auth import HUB_AUTH, create_token, current_user, hash_password, verify_password
 from .db import get_db
@@ -26,6 +29,7 @@ from .services.import_service import header_hash, process_import
 
 
 app = FastAPI(title="Where Did My Money Go? API", version="1.0.0")
+app.include_router(banks_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(","),
@@ -105,6 +109,7 @@ def public_transaction(t):
         "category_source": t.category_source, "confidence": str(t.confidence),
         "is_transfer": t.is_transfer, "is_refund": t.is_refund,
         "is_subscription": t.is_subscription, "notes": t.notes, "import_id": t.import_id, "account_id": t.account_id,
+        "pending": t.pending, "source": "bank" if t.external_transaction_id else "manual_or_csv",
     }
 
 
@@ -115,8 +120,13 @@ def owned_transaction(db, user, transaction_id):
     return t
 
 
-def all_transactions(db, user):
-    return list(db.scalars(select(Transaction).where(Transaction.user_id == user.id).order_by(Transaction.transaction_date.desc())))
+def all_transactions(db, user, account_id=None, include_pending=False):
+    query = select(Transaction).where(Transaction.user_id == user.id)
+    if account_id:
+        query = query.where(Transaction.account_id == account_id)
+    if not include_pending:
+        query = query.where(Transaction.pending.is_(False))
+    return list(db.scalars(query.order_by(Transaction.transaction_date.desc())))
 
 
 @app.get("/health")
@@ -160,6 +170,7 @@ def me(user: User = Depends(current_user)):
 
 @app.delete("/api/v1/me")
 def delete_me(user: User = Depends(current_user), db: Session = Depends(get_db)):
+    disconnect_all(db, user.id)
     db.execute(delete(MerchantPreference).where(MerchantPreference.user_id == user.id))
     db.execute(delete(RecurringOverride).where(RecurringOverride.user_id == user.id))
     db.execute(delete(ImportProfile).where(ImportProfile.user_id == user.id))
@@ -198,10 +209,15 @@ async def confirm_import(
     if not isinstance(mapping, dict):
         raise HTTPException(400, "Mapping must be an object")
     validate_mapping(mapping, headers)
+    # Account ownership and currency come only from the validated form account.
+    mapping.pop("account_id", None)
+    mapping.pop("account_currency", None)
     if account_id:
         account = db.scalar(select(Account).where(Account.id == account_id, Account.user_id == user.id))
         if not account:
             raise HTTPException(404, "Account not found")
+        if account.external_account_id:
+            raise HTTPException(400, "Bank-linked accounts receive transactions automatically; use a separate account for CSV imports")
         mapping["account_id"] = account_id
         mapping["account_currency"] = account.currency
     return process_import(db, user.id, file.filename or "statement.csv", data, headers, rows, mapping, profile_name)
@@ -212,8 +228,20 @@ def accounts(user: User = Depends(current_user), db: Session = Depends(get_db)):
     owned = db.scalars(select(Account).where(Account.user_id == user.id).order_by(Account.created_at)).all()
     result = []
     for account in owned:
-        movement = db.scalar(select(func.sum(Transaction.amount)).where(Transaction.user_id == user.id, Transaction.account_id == account.id)) or Decimal("0")
-        result.append({"id": account.id, "name": account.name, "currency": account.currency, "opening_balance": str(account.opening_balance), "balance": str(account.opening_balance + movement)})
+        movement = db.scalar(select(func.sum(Transaction.amount)).where(Transaction.user_id == user.id, Transaction.account_id == account.id, Transaction.pending.is_(False))) or Decimal("0")
+        connection = db.get(BankConnection, account.bank_connection_id) if account.bank_connection_id else None
+        linked = bool(account.external_account_id)
+        balance = account.bank_balance if linked else account.opening_balance + movement
+        result.append({
+            "id": account.id, "name": account.name, "currency": account.currency,
+            "opening_balance": str(account.opening_balance), "balance": str(balance) if balance is not None else None,
+            "source": "bank" if linked else "manual", "account_type": account.account_type, "mask": account.mask,
+            "available_balance": str(account.available_balance) if account.available_balance is not None else None,
+            "balance_fetched_at": timestamp(account.balance_fetched_at),
+            "connection_id": account.bank_connection_id, "connection_status": connection.status if connection else None,
+            "institution_name": connection.institution_name if connection else None,
+            "environment": connection.environment if connection else None,
+        })
     return result
 
 
@@ -231,6 +259,8 @@ def update_account(account_id: str, payload: AccountInput, user: User = Depends(
     account = db.scalar(select(Account).where(Account.id == account_id, Account.user_id == user.id))
     if not account:
         raise HTTPException(404, "Account not found")
+    if account.external_account_id:
+        raise HTTPException(400, "Bank-linked accounts are managed by the bank connection")
     name = validate_account_payload(payload)
     if payload.currency != account.currency and db.scalar(select(Transaction.id).where(Transaction.user_id == user.id, Transaction.account_id == account.id).limit(1)):
         raise HTTPException(400, "Cannot change currency while the account has transactions")
@@ -246,6 +276,8 @@ def delete_account(account_id: str, user: User = Depends(current_user), db: Sess
     account = db.scalar(select(Account).where(Account.id == account_id, Account.user_id == user.id))
     if not account:
         raise HTTPException(404, "Account not found")
+    if account.external_account_id:
+        raise HTTPException(400, "Disconnect the bank in Settings to remove its accounts and synced data")
     db.execute(Transaction.__table__.update().where(Transaction.user_id == user.id, Transaction.account_id == account.id).values(account_id=None))
     db.delete(account)
     db.commit()
@@ -294,11 +326,14 @@ def transactions(
     search: Optional[str] = None, category: Optional[str] = None, start: Optional[date] = None,
     end: Optional[date] = None, direction: Optional[str] = None, currency: Optional[str] = None,
     min_amount: Optional[Decimal] = None, max_amount: Optional[Decimal] = None,
+    account_id: Optional[str] = None,
     is_transfer: Optional[bool] = None, is_subscription: Optional[bool] = None, needs_review: bool = False,
     page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200),
     user: User = Depends(current_user), db: Session = Depends(get_db),
 ):
     filters = [Transaction.user_id == user.id]
+    if account_id:
+        filters.append(Transaction.account_id == account_id)
     if search:
         filters.append((Transaction.merchant_name.ilike(f"%{search}%")) | (Transaction.description_raw.ilike(f"%{search}%")))
     if category:
@@ -323,7 +358,7 @@ def transactions(
         filters.append(Transaction.is_subscription == is_subscription)
     if needs_review:
         filters.append(Transaction.confidence < Decimal("0.60"))
-        filters.append(Transaction.category_source == "rule")
+        filters.append(Transaction.category_source.in_(["rule", "bank"]))
     total = db.scalar(select(func.count()).select_from(Transaction).where(*filters))
     items = db.scalars(select(Transaction).where(*filters).order_by(Transaction.transaction_date.desc(), Transaction.id.desc()).offset((page - 1) * page_size).limit(page_size)).all()
     return {"items": [public_transaction(t) for t in items], "total": total, "page": page, "page_size": page_size}
@@ -343,6 +378,8 @@ def create_transaction(payload: ManualTransaction, user: User = Depends(current_
         account = db.scalar(select(Account).where(Account.id == payload.account_id, Account.user_id == user.id))
         if not account:
             raise HTTPException(404, "Account not found")
+    if account and account.external_account_id:
+        raise HTTPException(400, "Bank-linked accounts receive transactions automatically")
     currency = (payload.currency or (account.currency if account else settings.currency)).upper()
     if currency not in ("USD", "EUR", "GBP", "VND"):
         raise HTTPException(400, "Unsupported currency")
@@ -384,6 +421,17 @@ def update_transaction(transaction_id: str, payload: TransactionPatch, user: Use
             raise HTTPException(404, "Account not found")
         if target.currency != t.currency:
             raise HTTPException(400, "Currency must match the selected account")
+    if t.external_transaction_id and "account_id" in changes and changes["account_id"] != t.account_id:
+        raise HTTPException(400, "A synced transaction must stay in its bank account")
+    if not t.external_transaction_id and "account_id" in changes and changes["account_id"]:
+        if target.external_account_id:
+            raise HTTPException(400, "Bank-linked accounts receive transactions automatically")
+    if t.external_transaction_id:
+        overrides = set(json.loads(t.bank_overrides or "[]"))
+        overrides.update(key for key in changes if key != "account_id")
+        if "category" in changes:
+            overrides.update(["category_source", "confidence"])
+        t.bank_overrides = json.dumps(sorted(overrides))
     chosen_category = changes.pop("category", None)
     for key, value in changes.items():
         if key == "merchant_name" and (not value or len(value) > 255):
@@ -407,14 +455,19 @@ def update_transaction(transaction_id: str, payload: TransactionPatch, user: Use
 
 @app.delete("/api/v1/transactions/{transaction_id}")
 def delete_transaction(transaction_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    db.delete(owned_transaction(db, user, transaction_id))
+    transaction = owned_transaction(db, user, transaction_id)
+    if transaction.external_transaction_id:
+        raise HTTPException(400, "Synced transactions are managed by the bank; disconnect to delete synced data")
+    db.delete(transaction)
     db.commit()
     return {"deleted": True}
 
 
 @app.get("/api/v1/analytics/summary")
-def analytics_summary(start: Optional[date] = None, end: Optional[date] = None, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    query = select(Transaction).where(Transaction.user_id == user.id)
+def analytics_summary(start: Optional[date] = None, end: Optional[date] = None, account_id: Optional[str] = None, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    query = select(Transaction).where(Transaction.user_id == user.id, Transaction.pending.is_(False))
+    if account_id:
+        query = query.where(Transaction.account_id == account_id)
     if start:
         query = query.where(Transaction.transaction_date >= start)
     if end:
@@ -423,10 +476,10 @@ def analytics_summary(start: Optional[date] = None, end: Optional[date] = None, 
 
 
 @app.get("/api/v1/analytics/comparison")
-def analytics_comparison(user: User = Depends(current_user), db: Session = Depends(get_db)):
+def analytics_comparison(account_id: Optional[str] = None, user: User = Depends(current_user), db: Session = Depends(get_db)):
     settings = db.get(UserSettings, user.id)
     today = datetime.now(ZoneInfo(settings.timezone if settings else "UTC")).date()
-    return compare_month(all_transactions(db, user), today)
+    return compare_month(all_transactions(db, user, account_id), today)
 
 
 @app.get("/api/v1/analytics/timeline")
@@ -493,9 +546,10 @@ def safe_csv_cell(value):
 def export_transactions(user: User = Depends(current_user), db: Session = Depends(get_db)):
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["Date", "Merchant", "Description", "Category", "Amount", "Currency", "Recurring", "Transfer", "Notes"])
-    for t in all_transactions(db, user):
-        writer.writerow([safe_csv_cell(t.transaction_date), safe_csv_cell(t.merchant_name), safe_csv_cell(t.description_raw), safe_csv_cell(t.category), str(t.amount), t.currency, t.is_subscription, t.is_transfer, safe_csv_cell(t.notes)])
+    writer.writerow(["Date", "Merchant", "Description", "Category", "Amount", "Currency", "Recurring", "Transfer", "Notes", "Account", "Status", "Source"])
+    account_names = {a.id: a.name for a in db.scalars(select(Account).where(Account.user_id == user.id))}
+    for t in all_transactions(db, user, include_pending=True):
+        writer.writerow([safe_csv_cell(t.transaction_date), safe_csv_cell(t.merchant_name), safe_csv_cell(t.description_raw), safe_csv_cell(t.category), str(t.amount), t.currency, t.is_subscription, t.is_transfer, safe_csv_cell(t.notes), safe_csv_cell(account_names.get(t.account_id, "")), "pending" if t.pending else "posted", "bank" if t.external_transaction_id else "manual_or_csv"])
     buffer.seek(0)
     return StreamingResponse(iter([buffer.getvalue()]), media_type="text/csv", headers={"Content-Disposition": 'attachment; filename="transactions.csv"'})
 
@@ -513,6 +567,7 @@ def export_accounts(user: User = Depends(current_user), db: Session = Depends(ge
 
 @app.delete("/api/v1/data")
 def delete_data(user: User = Depends(current_user), db: Session = Depends(get_db)):
+    disconnect_all(db, user.id)
     db.execute(delete(Transaction).where(Transaction.user_id == user.id))
     db.execute(delete(ImportBatch).where(ImportBatch.user_id == user.id))
     db.execute(delete(MerchantPreference).where(MerchantPreference.user_id == user.id))
