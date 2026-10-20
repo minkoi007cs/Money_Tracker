@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getVercelOidcToken } from "@vercel/oidc";
 import { decodeSession, HUB_MODE, revokeSession, SESSION_COOKIE } from "@/lib/hub";
 
 const COOKIE = "money_session";
@@ -45,11 +46,16 @@ async function proxy(request: NextRequest, context: Context) {
 
   let upstream: Response;
   try {
+    if (process.env.API_USE_VERCEL_OIDC === "true") {
+      const oidcToken = await getVercelOidcToken();
+      headers.set("x-vercel-trusted-oidc-idp-token", oidcToken);
+    }
     upstream = await fetch(`${API_BASE}/api/v1/${endpoint}${request.nextUrl.search}`, {
       method: request.method,
       headers,
       body,
       cache: "no-store",
+      redirect: "error",
       signal: AbortSignal.timeout(endpoint.startsWith("banks/") ? 100000 : 30000),
     });
   } catch {

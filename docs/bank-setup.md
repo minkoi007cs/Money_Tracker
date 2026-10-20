@@ -28,3 +28,8 @@ Tính năng đã có trong mã local, chưa được xác minh với ngân hàng
 Phải kiểm tra luồng HTTPS App System → dashboard → Plaid OAuth → Chase/PNC → số dư/giao dịch, mở lại PWA, refresh session, quyền người dùng thứ hai, disconnect/revoke và backup/retention. Hiện các bài test provider dùng dữ liệu giả; không chứng minh quyền Production hoặc kết nối thật thành công. Không đưa Sandbox Items vào database dùng cho tài chính thật.
 
 Nguồn: [Transactions integration](https://plaid.com/docs/transactions/), [Accounts and balance semantics](https://plaid.com/docs/api/accounts/), [Web Link and OAuth callback](https://plaid.com/docs/link/web/).
+
+
+## Vercel frontend → API
+
+API production giữ Vercel Authentication. Frontend production dùng `API_USE_VERCEL_OIDC=true` và `@vercel/oidc` để gửi token ngắn hạn bằng header `x-vercel-trusted-oidc-idp-token`; JWT người dùng vẫn được FastAPI xác minh riêng. Trusted Sources của API chỉ cho project frontend Money Tracker production → API production, không cấp Preview/Development quyền vào dữ liệu production. Proxy không theo redirect ngoài ý muốn. `API_BASE_URL` trỏ domain production của API sau khi deploy và kiểm tra health. Trong monorepo, API cần override install command `pip install -r requirements.txt` và build command `python -m compileall -q app index.py` để Turbo không chọn lệnh build frontend.
