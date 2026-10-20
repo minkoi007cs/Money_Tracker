@@ -63,6 +63,8 @@ Trước khi làm việc, đọc file này rồi `tech.md`. Sau mỗi thay đổ
 
 | 2026-10-19 | `cbafa81` | `Align standalone web lockfile and record production API readiness` | Đồng bộ lockfile frontend độc lập và ghi nhận API production | npm audit cả root/web 0; deploy frontend đã được xác nhận tiếp ngày 20 |
 
+| 2026-10-20 | `7398709` | `Record verified HTTPS production release and pending Plaid access` | Ghi nhận production HTTPS, CSV/thống kê/export qua và Plaid chờ duyệt | CSV giả 3 dòng, số liệu khớp, export đúng; cleanup còn 0 giao dịch |
+
 Hash trong bảng được lấy từ Git sau khi commit. Các commit chỉ ghi nhật ký có thể xem trong `git log` để tránh vòng lặp tự tham chiếu.
 
 ## Việc còn lại
