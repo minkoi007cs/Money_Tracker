@@ -1,6 +1,6 @@
 # Kết nối Chase và PNC với Money Tracker
 
-Tính năng đã có trong mã local, chưa được xác minh với ngân hàng thật hoặc triển khai production. Không cần cung cấp mật khẩu ngân hàng cho Money Tracker hay vào chat. Người dùng đăng nhập và cấp quyền ở giao diện ngân hàng qua Plaid Link.
+Bản có tích hợp đã triển khai production ngày 2026-10-20; đăng nhập HTTPS, CSV và thống kê đã kiểm tra. Plaid Trial đang chờ review 2–3 business days nên Connect bank hiện tắt; chưa được xác minh với ngân hàng thật. Không cần cung cấp mật khẩu ngân hàng cho Money Tracker hay vào chat. Người dùng đăng nhập và cấp quyền ở giao diện ngân hàng qua Plaid Link.
 
 ## Cấu hình phía server
 

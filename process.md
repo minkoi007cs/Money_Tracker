@@ -4,6 +4,9 @@ Trước khi làm việc, đọc file này rồi `tech.md`. Sau mỗi thay đổ
 
 ## Trạng thái
 
+- 2026-10-20 (production đã kiểm tra): frontend https://money-tracker-rho-bay.vercel.app và API production đã promote thành công. Đăng nhập thật qua App System/HTTPS → dashboard → API có bảo vệ → Neon tenant hoạt động. Trình duyệt đã preview/confirm CSV giả 3 dòng, dashboard trả thu $100.00 / chi $19.99 / net $80.01; export CSV tải về có đúng 3 dòng. Đã xóa chính xác batch thử và 3 giao dịch giả, xác nhận còn 0 giao dịch của người dùng; giữ profile/settings. Manifest và service worker trả 200, API frontend chưa đăng nhập trả 401; API health qua Vercel curl trả ok. PostgreSQL thực tế ở migration 005, schema check qua; 25 pytest, Next.js hub build/TypeScript và hai npm audit đều qua (0 vulnerabilities). Đây là bản có thể mở/cài PWA để thử; cài trên thiết bị iOS/Android thật chưa được xác minh.
+- Plaid Trial đã nộp, Dashboard báo chờ review 2–3 business days. Chưa có secret/quyền Production, nút Connect bank đang tắt đúng thiết kế; chưa có số dư hoặc giao dịch Chase/PNC thật. Sau duyệt cần cấu hình secret phía API, đăng ký redirect HTTPS, deploy lại và để người dùng tự cấp quyền từng bank trong Plaid Link. Không tạo lịch tự kiểm tra hoặc gói trả phí.
+
 - 2026-10-19 (release): người dùng đã gửi Plaid Trial, Dashboard báo review 2–3 business days; MFA App System đã hoàn tất. Đã được người dùng xác nhận ngay trước khi cấp cặp pk/sk mới chỉ `auth:read`, lưu phía server vào hai project Vercel, không đưa giá trị vào Git/chat. Đã cấu hình DATABASE_URL đúng Neon tenant riêng, chạy migration 004→005 trên PostgreSQL thật và alembic check qua. API đã build và promote production; `/health` qua Vercel curl trả ok. API giữ Vercel Authentication; theo phạm vi thiết lập hai dịch vụ Money Tracker đã được người dùng cho phép, thêm Trusted Sources chỉ frontend production → API production và proxy dùng OIDC ngắn hạn; không cấp Preview/Development quyền production. Đang triển khai frontend và còn HTTPS E2E. Đã cập nhật Next.js 16.4.2 và phụ thuộc vá lỗi; npm audit không báo lỗ hổng, Next.js hub build/TypeScript qua.
 
 - 2026-10-19 (cloud): đã push `codex/money-tracker-bank-connect` tại `08c4a7e` và tạo draft PR #1. GitHub Vercel Preview check thành công. CLI Vercel dùng được credential riêng dù connector trả 403 theo team. Đã tạo `money-tracker-api` (`prj_Wn3AD2ArWz9GIidjdTlAIK7lJsqV`), root `apps/api`, framework FastAPI, timeout 120 giây; frontend giữ root `apps/web`, dùng `npm run build`, timeout 120 giây. Đã đặt các production env không chứa khóa hub/DB và tạo `BANK_TOKEN_ENCRYPTION_KEYS` nhạy cảm riêng phía API, không in/lưu vào Git. Chưa deploy production do còn thiếu cấu hình hub/tenant và Plaid Production. `.vercelignore` loại output, tmp, database local và secrets khỏi gói upload.
@@ -56,14 +59,15 @@ Trước khi làm việc, đọc file này rồi `tech.md`. Sau mỗi thay đổ
 | 2026-10-14 | `27f7077` | `Preserve hub session during auth service outages` | Giữ cookie khi App System trả lỗi máy chủ hoặc dữ liệu phiên không hợp lệ tạm thời | Next build chế độ hub và synthetic auth smoke test qua |
 | 2026-10-14 | `2300373` | `Prepare production Money Tracker API and document tenant database` | Chốt Python 3.12, health kiểm tra PostgreSQL, chặn fallback local trên Vercel, cập nhật trạng thái App System tenant | 14 pytest; Next build hub; PostgreSQL migration/check; health 200; Vercel thiếu cấu hình từ chối khởi động |
 | 2026-10-19 | `08c4a7e` | `Add read-only Plaid bank connections and balance dashboard` | Tích hợp Plaid, bank balance snapshots, transaction sync/lease, dashboard filter, hướng dẫn và bảo vệ CSV ownership | 25 pytest; Next hub build; SQLite migration/check; PostgreSQL SQL offline; UI demo/mobile; GitHub Preview check |
-
 | 2026-10-19 | `3725479` | `Authenticate protected API calls with Vercel OIDC and patch dependencies` | Proxy gửi token OIDC phía server, fail closed với redirect; nâng Next.js tối thiểu 16.4.2 và vá dependencies; cập nhật tài liệu deploy | Next.js hub build/TypeScript qua; root npm audit 0; nested lock được đồng bộ tiếp ở lượt này |
+
+| 2026-10-19 | `cbafa81` | `Align standalone web lockfile and record production API readiness` | Đồng bộ lockfile frontend độc lập và ghi nhận API production | npm audit cả root/web 0; deploy frontend đã được xác nhận tiếp ngày 20 |
 
 Hash trong bảng được lấy từ Git sau khi commit. Các commit chỉ ghi nhật ký có thể xem trong `git log` để tránh vòng lặp tự tham chiếu.
 
 ## Việc còn lại
 
 - Mốc 1–7 đã chạy ở môi trường cục bộ. Cookie HttpOnly và kiểm tra Origin đã bổ sung; App System cung cấp rate limit đăng nhập khi chế độ hub hoạt động. Mốc 8 còn backup/retention, PostgreSQL integration test, accessibility và e2e tự động trước khi dùng sao kê thật.
-- App System child app, khóa và PostgreSQL tenant riêng đã sẵn sàng. Còn cấu hình Vercel production, push GitHub và thử bằng dữ liệu giả trên HTTPS; chỉ dùng sao kê thật sau khi xác nhận luồng này và chính sách backup/retention.
+- App System/tenant/Vercel và HTTPS CSV smoke test đã hoàn tất. Còn quyền Plaid Production và OAuth ngân hàng thật; backup/retention và cài PWA trên điện thoại thật chưa xác minh. Không dùng app làm bản lưu sao kê duy nhất.
 - Dedupe exact theo user/ngày/số tiền/mô tả có thể coi hai khoản chi thật giống hệt trong cùng ngày là trùng; cần màn hình xử lý thủ công hoặc near-duplicate review nếu dùng với sao kê nhiều nguồn.
 - Với commit tiếp theo, tiếp tục ghi hash và nội dung thực tế vào bảng Commit, đồng bộ `proccess.md` sau khi commit thành công.
